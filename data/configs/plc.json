@@ -1,0 +1,12 @@
+{
+    "notifier": {
+        "telegram": {
+            "bot": "",
+            "chat": 0
+        },
+        "sms": {
+            "api": "",
+            "phone": "+7"
+        }
+    }
+}

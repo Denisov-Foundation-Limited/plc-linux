@@ -1,0 +1,21 @@
+{
+    "security": [
+        {
+            "name": "rack",
+            "gpio": {
+                "status": "cpu-led-sts1",
+                "buzzer": "ext-buzzer",
+                "alarm": {
+                    "led": "cpu-led-alrm",
+                    "relay": "ext-rly16-1"
+                }
+            },
+            "sensors": [
+                { "name": "box", "type": "reed", "gpio": "ext-opto-8", "telegram": true, "sms": true, "alarm": true }
+            ],
+            "keys": [
+                "1234567890987654321"
+            ]
+        }
+    ]
+}
