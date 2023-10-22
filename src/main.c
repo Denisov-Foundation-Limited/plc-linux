@@ -8,20 +8,24 @@
 /*                                                                   */
 /*********************************************************************/
 
-#include <stdio.h>
-
-#include <glib.h>
-#include <jansson.h>
+#include <string.h>
 
 #include <utils/configs.h>
 #include <utils/utils.h>
 #include <utils/log.h>
 #include <controllers/controllers.h>
+#include <ftest/ftest.h>
+#include <core/gpio.h>
 
-int main()
+int main(const int argc, const char **argv)
 {
     LogPathSet("./data/log/");
     Log(LOG_TYPE_INFO, "MAIN", "Starting application");
+
+    if (!GpioInit()) {
+        Log(LOG_TYPE_ERROR, "MAIN", "Failed to init GPIO");
+        return -1;
+    }
 
     if (!ConfigsRead("./data/configs/")) {
         Log(LOG_TYPE_ERROR, "MAIN", "Failed to load configs");
@@ -29,6 +33,17 @@ int main()
     }
 
     Log(LOG_TYPE_INFO, "MAIN", "Configs was readed");
+
+    if (argc > 1) {
+        if (!strcmp(argv[1], "--ftest")) {
+            if (!FactoryTestStart()) {
+                Log(LOG_TYPE_ERROR, "MAIN", "Failed to start Factory Test");
+            }
+            Log(LOG_TYPE_INFO, "MAIN", "Exiting!");
+            return 0;
+        }
+    }
+
     Log(LOG_TYPE_INFO, "MAIN", "Starting controllers");
 
     if (!ControllersStart()) {

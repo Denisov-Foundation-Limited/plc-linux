@@ -19,6 +19,32 @@
 /*                                                                   */
 /*********************************************************************/
 
+bool OneWireDevicesList(GList **devices)
+{
+    GError      *error = NULL;
+    const char  *file_name;
+    GDir        *dir = g_dir_open(ONE_WIRE_PATH, 0, &error);
+
+    if (dir == NULL) {
+        g_error_free(error);
+        return false;
+    }
+
+    while ((file_name = g_dir_read_name(dir))) {
+        char **parts = g_strsplit(file_name, "-", 0);
+
+        if (parts[0] != NULL && parts[1] != NULL) {
+            OneWireData *data = (OneWireData *)malloc(sizeof(OneWireData));
+            strncpy(data->value, file_name, SHORT_STR_LEN);
+            *devices = g_list_append(*devices, data);
+        }
+
+        g_strfreev(parts);
+    }
+
+    return true;
+}
+
 bool OneWireKeysRead(GList **keys)
 {
     GError      *error = NULL;

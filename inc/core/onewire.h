@@ -29,6 +29,15 @@ typedef struct {
 } OneWireData;
 
 /**
+ * @brief Read all detected 1-Wire bus devices
+ * 
+ * @param keys Readed devices list
+ * 
+ * @return true/false as result of reading devices
+ */
+bool OneWireDevicesList(GList **devices);
+
+/**
  * @brief Read all detected iButton keys on 1-Wire bus
  * 
  * @param keys Readed keys list

@@ -42,6 +42,13 @@ typedef struct {
 } GpioPin;
 
 /**
+ * @brief GPIO global initialization
+ *
+ * @return true/false as result of initialization GPIO
+ */
+bool GpioInit();
+
+/**
  * @brief Add new GPIO
  * 
  * @param pin New pin
