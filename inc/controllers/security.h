@@ -33,11 +33,11 @@ typedef enum {
 } SecurityGpio;
 
 typedef struct {
-    char    value[STR_LEN];
+    char    value[SHORT_STR_LEN];
 } SecurityKey;
 
 typedef struct {
-    char                name[STR_LEN];
+    char                name[SHORT_STR_LEN];
     SecuritySensorType  type;
     GpioPin             *gpio;
     bool                telegram;
@@ -47,7 +47,7 @@ typedef struct {
 } SecuritySensor;
 
 typedef struct {
-    char    name[STR_LEN];
+    char    name[SHORT_STR_LEN];
     GList   *sensors;
     GList   *keys;
     GpioPin *gpio[SECURITY_GPIO_MAX];

@@ -19,8 +19,14 @@
 #include <core/gpio.h>
 #include <core/extenders.h>
 #include <core/lcd.h>
-#include <controllers/security.h>
 #include <net/notifier.h>
+#include <controllers/security.h>
+
+/*********************************************************************/
+/*                                                                   */
+/*                         PRIVATE FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
 
 static bool FactoryRead(const char *path, ConfigsFactory *factory)
 {
@@ -35,8 +41,8 @@ static bool FactoryRead(const char *path, ConfigsFactory *factory)
         return false;
     }
 
-    strncpy(factory->board, json_string_value(json_object_get(data, "board")), STR_LEN);
-    strncpy(factory->revision, json_string_value(json_object_get(data, "revision")), STR_LEN);
+    strncpy(factory->board, json_string_value(json_object_get(data, "board")), SHORT_STR_LEN);
+    strncpy(factory->revision, json_string_value(json_object_get(data, "revision")), SHORT_STR_LEN);
 
     json_decref(data);
     return true;
@@ -104,7 +110,7 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
     json_array_foreach(json_object_get(data, "gpio"), index, value) {
         GpioPin *pin = (GpioPin *)malloc(sizeof(GpioPin));
 
-        strncpy(pin->name, json_string_value(json_object_get(value, "name")), GPIO_NAME_STR_LEN);
+        strncpy(pin->name, json_string_value(json_object_get(value, "name")), SHORT_STR_LEN);
         pin->pin = json_integer_value(json_object_get(value, "pin"));
 
         const char *type_str = json_string_value(json_object_get(value, "type"));
@@ -159,7 +165,7 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
     json_array_foreach(json_object_get(data, "lcd"), index, value) {
         LCD *lcd = (LCD *)malloc(sizeof(LCD));
 
-        strncpy(lcd->name, json_string_value(json_object_get(value, "name")), GPIO_NAME_STR_LEN);
+        strncpy(lcd->name, json_string_value(json_object_get(value, "name")), SHORT_STR_LEN);
         lcd->rs = json_integer_value(json_object_get(value, "rs"));
         lcd->rw = json_integer_value(json_object_get(value, "rw"));
         lcd->e = json_integer_value(json_object_get(value, "e"));
@@ -214,7 +220,7 @@ static bool ControllersRead(const char *path)
         ctrl->sensors = NULL;
         ctrl->keys = NULL;
 
-        strncpy(ctrl->name, json_string_value(json_object_get(value, "name")), STR_LEN);
+        strncpy(ctrl->name, json_string_value(json_object_get(value, "name")), SHORT_STR_LEN);
         LogF(LOG_TYPE_INFO, "CONFIGS", "Add Security controller: \"%s\"", ctrl->name);
 
         /**
@@ -257,7 +263,7 @@ static bool ControllersRead(const char *path)
         json_array_foreach(json_object_get(value, "sensors"), ext_index, ext_value) {
             SecuritySensor *sensor = (SecuritySensor *)malloc(sizeof(SecuritySensor));
 
-            strncpy(sensor->name, json_string_value(json_object_get(ext_value, "name")), STR_LEN);
+            strncpy(sensor->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
 
             sensor->gpio = GpioPinGet(json_string_value(json_object_get(ext_value, "gpio")));
             if (sensor->gpio == NULL) {
@@ -298,7 +304,7 @@ static bool ControllersRead(const char *path)
 
         json_array_foreach(json_object_get(value, "keys"), ext_index, ext_value) {
             SecurityKey *key = (SecurityKey *)malloc(sizeof(SecurityKey));
-            strncpy(key->value, json_string_value(ext_value), STR_LEN);
+            strncpy(key->value, json_string_value(ext_value), SHORT_STR_LEN);
             SecurityKeyAdd(ctrl, key);
             LogF(LOG_TYPE_INFO, "CONFIGS", "Add security key: \"%s\"", key->value);
         }
@@ -340,6 +346,12 @@ static bool PlcRead(const char *path)
     json_decref(data);
     return true;
 }
+
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
 
 bool ConfigsRead(const char *path)
 {

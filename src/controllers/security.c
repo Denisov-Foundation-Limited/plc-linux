@@ -13,8 +13,21 @@
 #include <controllers/security.h>
 #include <utils/log.h>
 #include <core/onewire.h>
+#include <net/notifier.h>
+
+/*********************************************************************/
+/*                                                                   */
+/*                         PRIVATE VARIABLES                         */
+/*                                                                   */
+/*********************************************************************/
 
 static GList *security = NULL;
+
+/*********************************************************************/
+/*                                                                   */
+/*                         PRIVATE FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
 
 static int AlarmThread(void *data)
 {
@@ -49,6 +62,8 @@ static int AlarmThread(void *data)
 
 static int SensorsThread(void *data)
 {
+    char    msg[STR_LEN];
+
     for (;;) {
         for (GList *c = security; c != NULL; c = c->next) {
             SecurityController *ctrl = (SecurityController *)c->data;
@@ -79,19 +94,29 @@ static int SensorsThread(void *data)
                         if (sensor->detected) {
                             LogF(LOG_TYPE_INFO, "SECURITY", "Security sensor \"%s\" detected!", sensor->name);
 
-                            if (sensor->sms) {
-                                Log(LOG_TYPE_INFO, "SECURITY", "Alarm message was sended to phone");
-                            }
-
-                            if (sensor->telegram) {
-                                Log(LOG_TYPE_INFO, "SECURITY", "Alarm message was sended to telegram");
-                            }
-
                             if (sensor->alarm && !ctrl->alarm) {
                                 ctrl->alarm = true;
                                 LogF(LOG_TYPE_INFO, "SECURITY", "Alarm was started");
                                 if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], true)) {
                                     Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Alarm relay gpio");
+                                }
+                            }
+
+                            snprintf(msg, STR_LEN, "Security+sensor+%s+detected", sensor->name);
+
+                            if (sensor->sms) {
+                                if (!NotifierSmsSend(msg)) {
+                                    Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send sms message");
+                                } else {
+                                    Log(LOG_TYPE_INFO, "SECURITY", "Alarm sms was sended to phone");
+                                }
+                            }
+
+                            if (sensor->telegram) {
+                                if (!NotifierTelegramSend(msg)) {
+                                    Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send telegram message");
+                                } else {
+                                    Log(LOG_TYPE_INFO, "SECURITY", "Alarm message was sended to telegram");
                                 }
                             }
                         }
@@ -167,6 +192,12 @@ static int KeysThread(void *data)
     return 0;
 }
 
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
 void SecurityControllerAdd(const SecurityController *ctrl)
 {
     security = g_list_append(security, (void *)ctrl);
@@ -237,6 +268,12 @@ bool SecurityStatusSet(SecurityController *ctrl, bool status)
             Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Status LED gpio");
             return false;
         }
+
+        for (GList *s = ctrl->sensors; s != NULL; s = s->next) {
+            SecuritySensor *sensor = (SecuritySensor *)s->data;
+            sensor->detected = false;
+        }
+
         LogF(LOG_TYPE_INFO, "SECURITY", "Security controller \"%s\" disabled", ctrl->name);
     } else {
         if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_STATUS_LED], true)) {

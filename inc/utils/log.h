@@ -20,8 +20,33 @@ typedef enum {
     LOG_TYPE_ERROR
 } LogType;
 
+/**
+ * @brief Set log file folder
+ * 
+ * @param path Log file destination folder
+ */
+void LogPathSet(const char *path);
+
+/**
+ * @brief Logging message
+ * 
+ * @param type Log type
+ * @param module Code module
+ * @param msg Logging message
+ * 
+ * @return true/false as result of saving message to disk
+ */
 bool Log(const LogType type, const char *module, const char *msg);
 
+/**
+ * @brief Logging formatted message
+ * 
+ * @param type Log type
+ * @param module Code module
+ * @param args Formatted log message
+ * 
+ * @return true/false as result of saving message to disk
+ */
 #define LogF(type, module, args...) \
     do { \
         char buf[EXT_STR_LEN]; \

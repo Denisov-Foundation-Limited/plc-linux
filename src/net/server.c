@@ -18,45 +18,11 @@
 
 #include <net/server.h>
 
-
-
-size_t callback_func(char *buffer, size_t size, size_t nitems, void *userdata)
-{
-    printf("\n================================\n");
-     printf("MY: %s SIZE: %ld NITEMS: %ld DATA: %s\n", (char *)userdata, size, nitems, buffer);
-      printf("\n================================\n");
-}
-
-bool telegram_send(const char *key, unsigned chat_id, const char *message)
-{
-	char num[50];
-	char url[1024];
-	CURL *curl_handle;
-    char chunk[222];
-    strcpy(chunk, "Eltex");
-
-	sprintf(num, "%u", chat_id);
-
-    /*strcpy(url, "https://api.telegram.org/bot");
-    strcat(url, key);
-    strcat(url, "/sendMessage?chat_id=");
-    strcat(url, num);
-    strcat(url, "&text=");
-    strcat(url, message);*/
-    strcpy(url, "https://api.telegram.org/bot722804546:AAF1gXVjnK8RjFD8CT-J4gIsaEj3mCMlVTg/getUpdates");
-    
-	curl_handle = curl_easy_init();
-    if (curl_handle) {
-        curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, callback_func);
-        curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, chunk);
-        curl_easy_perform(curl_handle);
-        curl_easy_cleanup(curl_handle);
-
-        return true;
-	}
-	return false;
-}
+/*********************************************************************/
+/*                                                                   */
+/*                         PRIVATE FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
 
 static bool Process(int socketId)
 {
@@ -91,7 +57,6 @@ static bool Process(int socketId)
             FCGX_GetStr(query, 255, req.in);
             printf("BODY: %s\n", query);
         }
-        telegram_send("722804546:AAF1gXVjnK8RjFD8CT-J4gIsaEj3mCMlVTg", 36778420, "hello+world");
 
         FCGX_PutS("Content-type: text/html\r\n", req.out);
         FCGX_PutS("\r\n", req.out);
@@ -100,6 +65,12 @@ static bool Process(int socketId)
     }
     return true;
 }
+
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
 
 bool WebServerStart(const char *host, unsigned port)
 {

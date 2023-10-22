@@ -16,6 +16,12 @@
 #include <net/notifier.h>
 #include <utils/utils.h>
 
+/*********************************************************************/
+/*                                                                   */
+/*                         PRIVATE VARIABLES                         */
+/*                                                                   */
+/*********************************************************************/
+
 static struct {
     char        bot[STR_LEN];
     unsigned    chat;
@@ -31,6 +37,12 @@ static struct {
     .api = {0},
     .phone = {0}
 };
+
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
 
 void NotifierTelegramCredsSet(const char *bot_id, unsigned chat_id)
 {

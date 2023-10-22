@@ -13,6 +13,12 @@
 
 #include <core/onewire.h>
 
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
 bool OneWireKeysRead(GList **keys)
 {
     GError      *error = NULL;
@@ -30,7 +36,7 @@ bool OneWireKeysRead(GList **keys)
         if (parts[0] != NULL && parts[1] != NULL) {
             if (!strcmp(parts[0], ONE_WIRE_IBUTTON_PREFIX)) {
                 OneWireData *data = (OneWireData *)malloc(sizeof(OneWireData));
-                strncpy(data->value, parts[1], STR_LEN);
+                strncpy(data->value, parts[1], SHORT_STR_LEN);
                 *keys = g_list_append(*keys, data);
             }
         }

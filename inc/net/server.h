@@ -13,6 +13,14 @@
 
 #include <stdbool.h>
 
+/**
+ * @brief Starting FastCGI web server
+ * 
+ * @param host Server host
+ * @param port Server port
+ * 
+ * @return true/false as result of starting server
+ */
 bool WebServerStart(const char *host, unsigned port);
 
 #endif /* __WEB_SERVER_H__ */

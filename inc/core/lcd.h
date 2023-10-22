@@ -16,7 +16,7 @@
 #include <utils/utils.h>
 
 typedef struct {
-    char        name[STR_LEN];
+    char        name[SHORT_STR_LEN];
     unsigned    rs;
     unsigned    rw;
     unsigned    e;
@@ -27,6 +27,14 @@ typedef struct {
     unsigned    d7;
 } LCD;
 
-bool LcdAdd(const LCD *ext, char *err);
+/**
+ * @brief Add new I2C LCD module
+ * 
+ * @param lcd LCD module struct
+ * @param err Output error
+ * 
+ * @return true/false as result of initialization of module
+ */
+bool LcdAdd(const LCD *lcd, char *err);
 
 #endif /* __LCD_H__ */

@@ -34,25 +34,75 @@ typedef enum {
 } GpioPull;
 
 typedef struct {
-    char        name[GPIO_NAME_STR_LEN];
+    char        name[SHORT_STR_LEN];
     GpioType    type;
     unsigned    pin;
     GpioMode    mode;
     GpioPull    pull;
 } GpioPin;
 
+/**
+ * @brief Add new GPIO
+ * 
+ * @param pin New pin
+ * @param err Addition GPIO error output
+ * 
+ * @return true/false as result of addition new GPIO
+ */
 bool GpioPinAdd(const GpioPin *pin, char *err);
 
+/**
+ * @brief Get GPIO by name
+ * 
+ * @param name GPIO name
+ * 
+ * @return GPIO struct
+ */
 GpioPin *GpioPinGet(const char *name);
 
+/**
+ * @brief Get All GPIOs list
+ * 
+ * @return GPIO list
+ */
 GList **GpioPinsGet();
 
+/**
+ * @brief Read digital state from GPIO
+ * 
+ * @param pin GPIO pin
+ * 
+ * @return Readed value
+ */
 bool GpioPinRead(const GpioPin *pin);
 
+/**
+ * @brief Read analog value from GPIO
+ * 
+ * @param pin GPIO pin
+ * 
+ * @return Readed value
+ */
 int GpioPinReadA(const GpioPin *pin);
 
+/**
+ * @brief Writing digital value to GPIO
+ * 
+ * @param pin GPIO pin
+ * @param state Digital value
+ * 
+ * @return true/false as result of writing
+ */
 bool GpioPinWrite(const GpioPin *pin, bool state);
 
+/**
+ * @brief Writing analog value to GPIO
+ * 
+ * @param pin GPIO pin
+ * @param value Analog value
+ * 
+ * @return true/false as result of writing
+ */
 bool GpioPinWriteA(const GpioPin *pin, int value);
 
 #endif /* __GPIO_H__ */

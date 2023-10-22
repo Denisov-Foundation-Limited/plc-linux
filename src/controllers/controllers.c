@@ -12,6 +12,12 @@
 #include <controllers/security.h>
 #include <utils/log.h>
 
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
 bool ControllersStart()
 {
     if (!SecurityControllersStart()) {

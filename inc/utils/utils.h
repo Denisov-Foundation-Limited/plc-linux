@@ -15,5 +15,6 @@
 #define ERROR_STR_LEN       255
 #define STR_LEN             255
 #define EXT_STR_LEN         1024
+#define SHORT_STR_LEN       50
 
 #endif /* __UTILS_H__ */

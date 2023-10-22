@@ -25,11 +25,26 @@
 #define ONE_WIRE_INVALID_TEMP       -127
 
 typedef struct {
-    char value[STR_LEN];
+    char value[SHORT_STR_LEN];
 } OneWireData;
 
+/**
+ * @brief Read all detected iButton keys on 1-Wire bus
+ * 
+ * @param keys Readed keys list
+ * 
+ * @return true/false as result of reading keys
+ */
 bool OneWireKeysRead(GList **keys);
 
+/**
+ * @brief Read DS18B20 sensor temperature by ID on 1-Wire bus
+ * 
+ * @param id DS18B20 sensor id
+ * @param temp Output temperature
+ * 
+ * @return true/false as result of reading temperature
+ */
 bool OneWireTempRead(const char *id, float *temp);
 
 #endif /* __ONE_WIRE_H__ */

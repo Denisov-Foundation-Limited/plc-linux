@@ -20,6 +20,7 @@
 
 int main()
 {
+    LogPathSet("./data/log/");
     Log(LOG_TYPE_INFO, "MAIN", "Starting application");
 
     if (!ConfigsRead("./data/configs/")) {

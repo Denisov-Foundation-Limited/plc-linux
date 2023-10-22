@@ -20,8 +20,8 @@
 #define CONFIGS_PLC_FILE            "plc.json"
 
 typedef struct {
-    char    board[STR_LEN];
-    char    revision[STR_LEN];
+    char    board[SHORT_STR_LEN];
+    char    revision[SHORT_STR_LEN];
 } ConfigsFactory;
 
 /**
