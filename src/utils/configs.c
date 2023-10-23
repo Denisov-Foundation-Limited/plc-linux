@@ -214,7 +214,7 @@ static bool ControllersRead(const char *path)
     json_array_foreach(json_object_get(data, "security"), index, value) {
         SecurityController *ctrl = (SecurityController *)malloc(sizeof(SecurityController));
 
-        ctrl->_buzzer = false;
+        ctrl->last_alarm = false;
         ctrl->alarm = false;
         ctrl->status = false;
         ctrl->sensors = NULL;

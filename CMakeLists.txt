@@ -3,7 +3,12 @@ project(plc)
 
 include_directories("./inc/")
 include_directories("/usr/include/glib-2.0")
+
+IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
+include_directories("/usr/lib/arm-linux-gnueabihf/glib-2.0/include/")
+ELSE(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 include_directories("/usr/lib/x86_64-linux-gnu/glib-2.0/include/")
+ENDIF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm")
 
 set(CMAKE_CXX_COMPILER clang)
 set(CMAKE_CXX_STANDARD 17)
@@ -25,6 +30,7 @@ set(SRC_LIST ${SRC_LIST} src/main.c)
 add_executable(${PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${PROJECT_NAME} -lfcgi -ljansson -lcurl -lm -lglib-2.0 -pthread) 
 
-if(ARM)
-target_link_libraries(${PROJECT_NAME} -lwiringPi lwiringPiDev)
-endif(ARM)
+
+IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") 
+target_link_libraries(${PROJECT_NAME} -lwiringPi -lwiringPiDev)
+ENDIF()

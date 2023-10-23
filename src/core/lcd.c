@@ -12,8 +12,9 @@
 
 #include <core/lcd.h>
 
-#ifdef __ARM__
+#ifdef __arm__
 #include <wiringPi.h>
+#include <lcd.h>
 #endif
 
 /*********************************************************************/
@@ -38,7 +39,7 @@ GList **LcdsGet()
 
 bool LcdAdd(const LCD *lcd, char *err)
 {
-#ifdef __ARM__
+#ifdef __arm__
     pinMode(lcd->rw, OUTPUT);
     digitalWrite(lcd->rw, LOW);
     pinMode(lcd->k, OUTPUT);
@@ -55,38 +56,35 @@ bool LcdAdd(const LCD *lcd, char *err)
     if (lcd_fd == 0) {
         return false;
     }
+
+    lcdClear(lcd_fd);
+    lcdPosition(lcd_fd, 0, 0);
+    lcdPuts(lcd_fd, LCD_DEFAULT_TEXT_UP);
+    lcdPosition(lcd_fd, 0, 1);
+    lcdPuts(lcd_fd, LCD_DEFAULT_TEXT_DOWN);
 #endif
 
     lcds = g_list_append(lcds, (void *)lcd);
     return true;
 }
 
-bool LcdPrint(const LCD *lcd, char *text)
+void LcdPrint(const LCD *lcd, char *text)
 {
-#ifdef __ARM__
-    if (lcdPuts(lcd_fd, text) < 0) {
-        return false;
-    }
+#ifdef __arm__
+    lcdPuts(lcd_fd, text);
 #endif
-    return true;
 }
 
-bool LcdPosSet(const LCD *lcd, unsigned row, unsigned col)
+void LcdPosSet(const LCD *lcd, unsigned row, unsigned col)
 {
-#ifdef __ARM__
-    if (lcdPosition(lcd_fd, col, row) < 0) {
-        return false;
-    }
+#ifdef __arm__
+    lcdPosition(lcd_fd, col, row);
 #endif
-    return true;
 }
 
-bool LcdClear(const LCD *lcd)
+void LcdClear(const LCD *lcd)
 {
-#ifdef __ARM__
-    if (lcdClear(lcd_fd) < 0) {
-        return false;
-    }
+#ifdef __arm__
+    lcdClear(lcd_fd);
 #endif
-    return true;
 }

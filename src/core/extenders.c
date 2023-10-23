@@ -12,8 +12,11 @@
 
 #include <core/extenders.h>
 
-#ifdef __ARM__
+#ifdef __arm__
 #include <wiringPi.h>
+#include <pcf8574.h>
+#include <mcp23017.h>
+#include <ads1115.h>
 #endif
 
 /*********************************************************************/
@@ -32,7 +35,7 @@ static GList *exts = NULL;
 
 bool ExtenderAdd(const Extender *ext, char *err)
 {
-#ifdef __ARM__
+#ifdef __arm__
     switch (ext->type) {
         case EXT_TYPE_PCF_8574:
             if (pcf8574Setup(ext->base, ext->addr) < 0) {

@@ -53,7 +53,7 @@ typedef struct {
     GpioPin *gpio[SECURITY_GPIO_MAX];
     bool    status;
     bool    alarm;
-    bool    _buzzer;
+    bool    last_alarm;
 } SecurityController;
 
 /**

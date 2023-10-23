@@ -22,6 +22,9 @@
 #define LCD_COLS            16
 #define LCD_BITS            4
 
+#define LCD_DEFAULT_TEXT_UP     "  FUTURE  CITY  "
+#define LCD_DEFAULT_TEXT_DOWN   "       PLC      "
+
 typedef struct {
     char        name[SHORT_STR_LEN];
     unsigned    rs;
@@ -54,29 +57,23 @@ bool LcdAdd(const LCD *lcd, char *err);
  * 
  * @param lcd LCD module struct
  * @param text Text message
- * 
- * @return true/false as result of printing text
  */
-bool LcdPrint(const LCD *lcd, char *text);
+void LcdPrint(const LCD *lcd, char *text);
 
 /**
  * @brief Changing position of LCD text
  * 
  * @param lcd LCD module struct
  * @param row Display row
- * @param row Display column
- * 
- * @return true/false as result of changing position
+ * @param col Display column
  */
-bool LcdPosSet(const LCD *lcd, unsigned row, unsigned col);
+void LcdPosSet(const LCD *lcd, unsigned row, unsigned col);
 
 /**
  * @brief Clear text on LCD
  * 
  * @param lcd LCD module struct
- * 
- * @return true/false as result of celaring text
  */
-bool LcdClear(const LCD *lcd);
+void LcdClear(const LCD *lcd);
 
 #endif /* __LCD_H__ */

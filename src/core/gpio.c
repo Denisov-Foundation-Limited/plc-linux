@@ -10,7 +10,7 @@
 
 #include <core/gpio.h>
 
-#ifdef __ARM__
+#ifdef __arm__
 #include <wiringPi.h>
 #endif
 
@@ -30,7 +30,7 @@ static GList *pins = NULL;
 
 bool GpioInit()
 {
-#ifdef __ARM__
+#ifdef __arm__
     if (wiringPiSetup() < 0) {
         return false;
     }
@@ -40,39 +40,33 @@ bool GpioInit()
 
 bool GpioPinAdd(const GpioPin *pin, char *err)
 {
-#ifdef __ARM__
+#ifdef __arm__
     switch (pin->mode) {
         case GPIO_MODE_INPUT:
-            if (pinMode(pin->pin, INPUT) < 0) {
-                return false;
-            }
+            pinMode(pin->pin, INPUT);
             break;
 
         case GPIO_MODE_OUTPUT:
-            if (pinMode(pin->pin, OUTPUT) < 0) {
-                return false;
-            }
+            pinMode(pin->pin, OUTPUT);
             break;
     }
 
     switch (pin->pull) {
         case GPIO_PULL_NONE:
-            if (pullUpDnControl(pin->pin, PUD_OFF) < 0) {
-                return false;
-            }
+            pullUpDnControl(pin->pin, PUD_OFF);
             break;
 
         case GPIO_PULL_DOWN:
-            if (pullUpDnControl(pin->pin, PUD_UP) < 0) {
-                return false;
-            }
+            pullUpDnControl(pin->pin, PUD_UP);
             break;
 
         case GPIO_PULL_UP:
-            if (pullUpDnControl(pin->pin, PUD_DOWN) < 0) {
-                return false;
-            }
+            pullUpDnControl(pin->pin, PUD_DOWN);
             break;
+    }
+
+    if (pin->mode == GPIO_MODE_OUTPUT) {
+        digitalWrite(pin->pin, LOW);
     }
 #endif
 
@@ -98,36 +92,30 @@ GList **GpioPinsGet()
 
 bool GpioPinRead(const GpioPin *pin)
 {
-#ifdef __ARM__
-    return digitalRead(pin->pin);
+#ifdef __arm__
+    return 1;//return digitalRead(pin->pin);
 #endif
     return true;
 }
 
 int GpioPinReadA(const GpioPin *pin)
 {
-#ifdef __ARM__
+#ifdef __arm__
     return analogRead(pin->pin);
 #endif
     return 0;
 }
 
-bool GpioPinWrite(const GpioPin *pin, bool state)
+void GpioPinWrite(const GpioPin *pin, bool state)
 {
-#ifdef __ARM__
-    if (digitalWrite(pin->pin, (state == true) ? HIGH : LOW) < 0) {
-        return false;
-    }
+#ifdef __arm__
+    digitalWrite(pin->pin, (state == true) ? HIGH : LOW);
 #endif
-    return true;
 }
 
-bool GpioPinWriteA(const GpioPin *pin, int value)
+void GpioPinWriteA(const GpioPin *pin, int value)
 {
-#ifdef __ARM__
-    if (analogWrite(pin->pin, value) < 0) {
-        return false;
-    }
+#ifdef __arm__
+    analogWrite(pin->pin, value);
 #endif
-    return true;
 }

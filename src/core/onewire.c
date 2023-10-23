@@ -36,10 +36,12 @@ bool OneWireDevicesList(GList **devices)
         if (parts[0] != NULL && parts[1] != NULL) {
             OneWireData *data = (OneWireData *)malloc(sizeof(OneWireData));
             strncpy(data->value, file_name, SHORT_STR_LEN);
-            *devices = g_list_append(*devices, data);
+            *devices = g_list_append(*devices, (void *)data);
         }
 
-        g_strfreev(parts);
+        if (parts != NULL) {
+            g_strfreev(parts);
+        }
     }
 
     return true;
@@ -67,7 +69,9 @@ bool OneWireKeysRead(GList **keys)
             }
         }
 
-        g_strfreev(parts);
+        if (parts != NULL) {
+            g_strfreev(parts);
+        }
     }
 
     return true;

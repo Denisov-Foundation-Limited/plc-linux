@@ -29,32 +29,29 @@ static GList *security = NULL;
 /*                                                                   */
 /*********************************************************************/
 
+static void AlarmStart()
+{
+    for (GList *c = security; c != NULL; c = c->next) {
+        SecurityController *ctrl = (SecurityController *)c->data;
+        if (ctrl->alarm) {
+            if (ctrl->last_alarm) {
+                ctrl->last_alarm = false;
+                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
+                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], false);
+            } else {
+                ctrl->last_alarm = true;
+                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], true);
+                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], true);
+            }
+        }
+    }
+}
+
 static int AlarmThread(void *data)
 {
     for (;;) {
-        for (GList *c = security; c != NULL; c = c->next) {
-            SecurityController *ctrl = (SecurityController *)c->data;
-            if (ctrl->alarm) {
-                if (ctrl->_buzzer) {
-                    ctrl->_buzzer = false;
-                    if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false)) {
-                        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Buzzer gpio");
-                    }
-                    if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], false)) {
-                        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Alarm LED gpio");
-                    }
-                } else {
-                    ctrl->_buzzer = true;
-                    if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], true)) {
-                        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Buzzer gpio");
-                    }
-                    if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], true)) {
-                        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Alarm LED gpio");
-                    }
-                }
-            }
-        }
-        thrd_sleep(&(struct timespec){ .tv_nsec = 500000 }, NULL);
+        AlarmStart();
+        thrd_sleep(&(struct timespec){ .tv_nsec = 500000000 }, NULL);
     }
 
     return 0;
@@ -71,6 +68,7 @@ static int SensorsThread(void *data)
                 for (GList *s = ctrl->sensors; s != NULL; s = s->next) {
                     SecuritySensor *sensor = (SecuritySensor *)s->data;
                     if (!sensor->detected) {
+
                         switch (sensor->type) {
                             case SECURITY_SENSOR_MICRO_WAVE:
                                 if (!GpioPinRead(sensor->gpio)) {
@@ -96,10 +94,9 @@ static int SensorsThread(void *data)
 
                             if (sensor->alarm && !ctrl->alarm) {
                                 ctrl->alarm = true;
+                                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], true);
+                                AlarmStart();
                                 LogF(LOG_TYPE_INFO, "SECURITY", "Alarm was started");
-                                if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], true)) {
-                                    Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Alarm relay gpio");
-                                }
                             }
 
                             snprintf(msg, STR_LEN, "Security+sensor+%s+detected", sensor->name);
@@ -133,17 +130,18 @@ static int SensorsThread(void *data)
 
 static int KeysThread(void *data)
 {
-    GList   **cur_keys = NULL;
+    GList   *cur_keys = NULL;
     bool    ow_error = false;
 
     for (;;) {
-        if (!OneWireKeysRead(cur_keys)) {
+        if (!OneWireKeysRead(&cur_keys)) {
             if (!ow_error) {
                 ow_error = true;
                 Log(LOG_TYPE_ERROR, "SECURITY", "Failed to read iButton codes");
             }
             if (cur_keys != NULL) {
-                g_list_free(*cur_keys);
+                g_list_free(cur_keys);
+                cur_keys = NULL;
             }
             thrd_sleep(&(struct timespec){ .tv_sec = 2 }, NULL);
             continue;
@@ -154,7 +152,12 @@ static int KeysThread(void *data)
             }
         }
 
-        for (GList *k = *cur_keys; k != NULL; k = k->next) {
+        if (cur_keys == NULL) {
+            thrd_sleep(&(struct timespec){ .tv_sec = 3 }, NULL);
+            continue;
+        }
+
+        for (GList *k = cur_keys; k != NULL; k = k->next) {
             OneWireData *data = (OneWireData *)k->data;
             bool found = false;
 
@@ -182,8 +185,9 @@ static int KeysThread(void *data)
             }
         }
 
-        if (*cur_keys != NULL) {
-            g_list_free(*cur_keys);
+        if (cur_keys != NULL) {
+            g_list_free(cur_keys);
+            cur_keys = NULL;
         }
 
         thrd_sleep(&(struct timespec){ .tv_sec = 3 }, NULL);
@@ -252,22 +256,10 @@ bool SecurityStatusSet(SecurityController *ctrl, bool status)
     if (!status) {
         ctrl->alarm = false;
 
-        if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false)) {
-            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Buzzer gpio");
-            return false;
-        }
-        if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], false)) {
-            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Alarm LED gpio");
-            return false;
-        }
-        if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], false)) {
-            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Alarm relay gpio");
-            return false;
-        }
-        if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_STATUS_LED], false)) {
-            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Status LED gpio");
-            return false;
-        }
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], false);
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], false);
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_STATUS_LED], false);
 
         for (GList *s = ctrl->sensors; s != NULL; s = s->next) {
             SecuritySensor *sensor = (SecuritySensor *)s->data;
@@ -276,10 +268,7 @@ bool SecurityStatusSet(SecurityController *ctrl, bool status)
 
         LogF(LOG_TYPE_INFO, "SECURITY", "Security controller \"%s\" disabled", ctrl->name);
     } else {
-        if (!GpioPinWrite(ctrl->gpio[SECURITY_GPIO_STATUS_LED], true)) {
-            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to write to Status LED gpio");
-            return false;
-        }
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_STATUS_LED], true);
         LogF(LOG_TYPE_INFO, "SECURITY", "Security controller \"%s\" enabled", ctrl->name);
     }
 

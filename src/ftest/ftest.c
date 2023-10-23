@@ -33,7 +33,8 @@ static int TestThread(void *data)
     char    lcd_text[2][SHORT_STR_LEN];
     int     val;
     bool    last_state = false;
-    GList   **devices = NULL;
+    bool    dev_found = false;
+    GList   *devices = NULL;
 
     Log(LOG_TYPE_INFO, "FTEST", "Starting FTest");
 
@@ -92,9 +93,7 @@ static int TestThread(void *data)
                 strncpy(gpio_value, "LOW", SHORT_STR_LEN);
             }
 
-            if (!GpioPinWrite(pin, last_state)) {
-                strncpy(gpio_value, "FAIL", SHORT_STR_LEN);
-            }
+            GpioPinWrite(pin, last_state);
 
             strncpy(gpio_type, "DIGITAL", SHORT_STR_LEN);
             LogF(LOG_TYPE_INFO, "FTEST", "\t\tWrite GPIO name: \"%s\"\ttype: \"%s\"\tstate \"%s\"", pin->name, gpio_type, gpio_value);
@@ -114,21 +113,11 @@ static int TestThread(void *data)
         for (GList *l = *lcds; l != NULL; l = l->next) {
             LCD *lcd = (LCD *)l->data;
 
-            if (!LcdClear(lcd)) {
-                LogF(LOG_TYPE_INFO, "FTEST", "\t\tDisplay name: \"%s\" Failed to clear LCD", lcd->name);
-            }
-            if (!LcdPosSet(lcd, 0, 0)) {
-                LogF(LOG_TYPE_INFO, "FTEST", "\t\tDisplay name: \"%s\" Failed to set pos LCD", lcd->name);
-            }
-            if (!LcdPrint(lcd, lcd_text[0])) {
-                LogF(LOG_TYPE_INFO, "FTEST", "\t\tDisplay name: \"%s\" Failed to print text[0] LCD", lcd->name);
-            }
-            if (!LcdPosSet(lcd, 1, 0)) {
-                LogF(LOG_TYPE_INFO, "FTEST", "\t\tDisplay name: \"%s\" Failed to set pos LCD", lcd->name);
-            }
-            if (!LcdPrint(lcd, lcd_text[1])) {
-                LogF(LOG_TYPE_INFO, "FTEST", "\t\tDisplay name: \"%s\" Failed to print text[1] LCD", lcd->name);
-            }
+            LcdClear(lcd);
+            LcdPosSet(lcd, 0, 0);
+            LcdPrint(lcd, lcd_text[0]);
+            LcdPosSet(lcd, 1, 0);
+            LcdPrint(lcd, lcd_text[1]);
 
             LogF(LOG_TYPE_INFO, "FTEST", "\t\tDisplay name: \"%s\" row[0]: \"%s\" row[1]: \"%s\"", lcd->name, lcd_text[0], lcd_text[1]);
         }
@@ -140,22 +129,28 @@ static int TestThread(void *data)
         Log(LOG_TYPE_INFO, "FTEST", "");
         Log(LOG_TYPE_INFO, "FTEST", "1-WIRE TEST:");
 
-        if (!OneWireDevicesList(devices)) {
+        if (!OneWireDevicesList(&devices)) {
             LogF(LOG_TYPE_INFO, "FTEST", "\t\tFailed to read 1-Wire devices list");
         } else {
-            for (GList *d = *devices; d != NULL; d = d->next) {
-                OneWireData *data = (OneWireData *)d->data;
+            if (devices != NULL) {
+                for (GList *d = devices; d != NULL; d = d->next) {
+                    OneWireData *data = (OneWireData *)d->data;
+                    dev_found = true;
 
-                LogF(LOG_TYPE_INFO, "FTEST", "\t\tDevice detected: \"%s\"", data->value);
+                    LogF(LOG_TYPE_INFO, "FTEST", "\t\tDevice detected: \"%s\"", data->value);
 
-                if (data != NULL) {
                     free(data);
                 }
             }
         }
 
+        if (!dev_found) {
+            Log(LOG_TYPE_INFO, "FTEST", "\t\tDevices not found");
+        }
+
         if (devices != NULL) {
-            g_list_free(*devices);
+            g_list_free(devices);
+            devices = NULL;
         }
 
         thrd_sleep(&(struct timespec){ .tv_sec = 1 }, NULL);

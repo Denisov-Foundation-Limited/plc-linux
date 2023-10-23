@@ -25,7 +25,7 @@
 #define ONE_WIRE_INVALID_TEMP       -127
 
 typedef struct {
-    char value[SHORT_STR_LEN];
+    char    value[SHORT_STR_LEN];
 } OneWireData;
 
 /**
