@@ -14,11 +14,18 @@
 #include <stdbool.h>
 #include <stdio.h>
 
+#include <utils/utils.h>
+
 typedef enum {
     LOG_TYPE_INFO,
     LOG_TYPE_WARN,
     LOG_TYPE_ERROR
 } LogType;
+
+typedef struct {
+    char    full_msg[EXT_STR_LEN];
+    char    date_str[SHORT_STR_LEN];
+} LogData;
 
 /**
  * @brief Set log file folder

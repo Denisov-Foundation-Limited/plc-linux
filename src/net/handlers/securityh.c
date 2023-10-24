@@ -47,20 +47,14 @@ static bool HandlerStatusSet(FCGX_Request *req, GList **params)
 
     SecurityController *ctrl = SecurityControllerGet(ctrl_name);
     if (ctrl == NULL) {
-        snprintf(error, STR_LEN, "Security controller \"%s\" not found", ctrl_name);
-        json_object_set_new(root, "error", json_string(error));
-        Log(LOG_TYPE_ERROR, "SECURITYH", error);
-        return ResponseSend(RESPONSE_TYPE_FAIL, req, root);
+       ResponseFailSendF(req, "SECURITYH", "Security controller \"%s\" not found", ctrl_name);
     }
 
     if (!SecurityStatusSet(ctrl, status)) {
-        snprintf(error, STR_LEN, "Security controller \"%s\" failed to switch status to \"%d\"", ctrl_name, status);
-        json_object_set_new(root, "error", json_string(error));
-        Log(LOG_TYPE_ERROR, "SECURITYH", error);
-        return ResponseSend(RESPONSE_TYPE_FAIL, req, root);
+       ResponseFailSendF(req, "SECURITYH", "Security controller \"%s\" failed to switch status to \"%d\"", ctrl_name, status);
     }
 
-    return ResponseSend(RESPONSE_TYPE_OK, req, root);
+    return ResponseOkSend(req, root);
 }
 
 static bool HandlerStatusGet(FCGX_Request *req, GList **params)
@@ -80,15 +74,12 @@ static bool HandlerStatusGet(FCGX_Request *req, GList **params)
 
     SecurityController *ctrl = SecurityControllerGet(ctrl_name);
     if (ctrl == NULL) {
-        snprintf(error, STR_LEN, "Security controller \"%s\" not found", ctrl_name);
-        json_object_set_new(root, "error", json_string(error));
-        LogF(LOG_TYPE_ERROR, "SECURITYH", error);
-        return ResponseSend(RESPONSE_TYPE_FAIL, req, root);
+        ResponseFailSendF(req, "SECURITYH", "Security controller \"%s\" not found", ctrl_name);
     }
 
     json_object_set_new(root, "status", json_boolean(SecurityStatusGet(ctrl)));
 
-    return ResponseSend(RESPONSE_TYPE_OK, req, root);
+    return ResponseOkSend(req, root);
 }
 
 /*********************************************************************/

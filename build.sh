@@ -4,7 +4,7 @@ for param in "$*"
 do
     if [[ $param == "--install" ]] ; then
         apt update && apt install libfcgi-dev libglib2.0-dev libcurl4-openssl-dev \
-            libjansson-dev cmake clang libglib2.0-dev
+            libjansson-dev cmake clang libglib2.0-dev libsqlite3-dev
     fi
 done
 

@@ -21,6 +21,7 @@ set(SRC_LIST ${SRC_LIST} src/net/response/response.c)
 set(SRC_LIST ${SRC_LIST} src/net/server.c)
 set(SRC_LIST ${SRC_LIST} src/net/notifier.c)
 set(SRC_LIST ${SRC_LIST} src/net/handlers/securityh.c)
+set(SRC_LIST ${SRC_LIST} src/db/database.c)
 set(SRC_LIST ${SRC_LIST} src/core/gpio.c)
 set(SRC_LIST ${SRC_LIST} src/core/lcd.c)
 set(SRC_LIST ${SRC_LIST} src/core/extenders.c)
@@ -31,7 +32,7 @@ set(SRC_LIST ${SRC_LIST} src/ftest/ftest.c)
 set(SRC_LIST ${SRC_LIST} src/main.c)
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})
-target_link_libraries(${PROJECT_NAME} -lfcgi -ljansson -lcurl -lm -lglib-2.0 -pthread) 
+target_link_libraries(${PROJECT_NAME} -lfcgi -ljansson -lcurl -lm -lglib-2.0 -lsqlite3 -pthread) 
 
 
 IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") 

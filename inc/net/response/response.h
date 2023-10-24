@@ -12,24 +12,39 @@
 #define __RESPONSE_H__
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #include <fcgiapp.h>
 #include <jansson.h>
 
-typedef enum {
-    RESPONSE_TYPE_OK,
-    RESPONSE_TYPE_FAIL
-} ResponseType;
+#include <utils/utils.h>
 
 /**
- * @brief Send FastCGI response
+ * @brief Send FastCGI fail response
  *
- * @param type Response type: Success or fail
+ * @param req Request struct
+ * @param module App module
+ * @param error Error text message
+ *
+ * @return Returns true/false as result of sending response
+ */
+bool ResponseFailSend(FCGX_Request *req, const char *module, const char *error);
+
+#define ResponseFailSendF(type, module, args...) \
+    do { \
+        char buf[EXT_STR_LEN]; \
+        snprintf(buf, EXT_STR_LEN, ##args); \
+        return ResponseFailSend(req, module, buf); \
+    } while(0)
+
+/**
+ * @brief Send FastCGI OK response
+ *
  * @param req Request struct
  * @param root Json response
  *
  * @return Returns true/false as result of sending response
  */
-bool ResponseSend(ResponseType type, FCGX_Request *req, json_t *root);
+bool ResponseOkSend(FCGX_Request *req, json_t *root);
 
 #endif /* __RESPONSE_H__ */
