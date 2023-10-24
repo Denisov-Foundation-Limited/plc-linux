@@ -226,7 +226,6 @@ GList **SecurityControllersGet()
 bool SecurityControllersStart()
 {
     thrd_t  sens_th, keys_th, alrm_th;
-    int     sens_res, keys_res, alrm_res;
 
     if (g_list_length(security) == 0) {
         return true;
@@ -237,14 +236,6 @@ bool SecurityControllersStart()
     thrd_create(&sens_th, &SensorsThread, NULL);
     thrd_create(&keys_th, &KeysThread, NULL);
     thrd_create(&alrm_th, &AlarmThread, NULL);
-
-    thrd_join(sens_th, &sens_res);
-    thrd_join(keys_th, &keys_res);
-    thrd_join(alrm_th, &alrm_res);
-
-    if (sens_res < 0 || keys_res < 0 || alrm_res < 0) {
-        return false;
-    }
 
     return true;
 }

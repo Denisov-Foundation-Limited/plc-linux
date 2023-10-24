@@ -13,14 +13,21 @@
 
 #include <stdbool.h>
 
+#define SERVER_API_VER  "/api/v1"
+
 /**
- * @brief Starting FastCGI web server
+ * @brief Set server credentials
  * 
  * @param host Server host
  * @param port Server port
+ */
+void WebServerCredsSet(const char *host, unsigned port);
+
+/**
+ * @brief Starting FastCGI web server
  * 
  * @return true/false as result of starting server
  */
-bool WebServerStart(const char *host, unsigned port);
+bool WebServerStart();
 
 #endif /* __WEB_SERVER_H__ */

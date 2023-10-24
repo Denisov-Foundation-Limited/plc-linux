@@ -11,9 +11,9 @@
     ],
 
     "gpio": [
-        { "name": "cpu-btn-up",   "pin": 8,   "type": "digital", "mode": "input",  "pull": "up"   },
-        { "name": "cpu-btn-red",  "pin": 7,   "type": "digital", "mode": "input",  "pull": "up"   },
-        { "name": "cpu-btn-dn",   "pin": 5,   "type": "digital", "mode": "input",  "pull": "up"   },
+        { "name": "cpu-btn-up",   "pin": 8,   "type": "digital", "mode": "input",  "pull": "down" },
+        { "name": "cpu-btn-red",  "pin": 7,   "type": "digital", "mode": "input",  "pull": "down" },
+        { "name": "cpu-btn-dn",   "pin": 5,   "type": "digital", "mode": "input",  "pull": "down" },
         { "name": "cpu-led-alrm", "pin": 14,  "type": "digital", "mode": "output", "pull": "none" },
         { "name": "cpu-led-sts1", "pin": 12,  "type": "digital", "mode": "output", "pull": "none" },
         { "name": "cpu-led-sts2", "pin": 11,  "type": "digital", "mode": "output", "pull": "none" },

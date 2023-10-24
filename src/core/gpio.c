@@ -93,7 +93,7 @@ GList **GpioPinsGet()
 bool GpioPinRead(const GpioPin *pin)
 {
 #ifdef __arm__
-    return 1;//return digitalRead(pin->pin);
+    return digitalRead(pin->pin);
 #endif
     return true;
 }

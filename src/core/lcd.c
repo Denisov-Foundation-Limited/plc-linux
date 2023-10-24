@@ -8,6 +8,8 @@
 /*                                                                   */
 /*********************************************************************/
 
+#include <threads.h>
+
 #include <glib.h>
 
 #include <core/lcd.h>
@@ -28,17 +30,14 @@ static int      lcd_fd = 0;
 
 /*********************************************************************/
 /*                                                                   */
-/*                          PUBLIC FUNCTIONS                         */
+/*                          PRIVATE FUNCTION                         */
 /*                                                                   */
 /*********************************************************************/
 
-GList **LcdsGet()
+static int LcdInitThread(void *data)
 {
-    return &lcds;
-}
+    LCD *lcd = (LCD *)data;
 
-bool LcdAdd(const LCD *lcd, char *err)
-{
 #ifdef __arm__
     pinMode(lcd->rw, OUTPUT);
     digitalWrite(lcd->rw, LOW);
@@ -65,6 +64,26 @@ bool LcdAdd(const LCD *lcd, char *err)
 #endif
 
     lcds = g_list_append(lcds, (void *)lcd);
+    return 0;
+}
+
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
+GList **LcdsGet()
+{
+    return &lcds;
+}
+
+bool LcdAdd(const LCD *lcd)
+{
+    thrd_t  th;
+
+    thrd_create(&th, &LcdInitThread, (void *)lcd);
+
     return true;
 }
 

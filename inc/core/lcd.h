@@ -46,11 +46,10 @@ GList **LcdsGet();
  * @brief Add new I2C LCD module
  * 
  * @param lcd LCD module struct
- * @param err Output error
  * 
  * @return true/false as result of initialization of module
  */
-bool LcdAdd(const LCD *lcd, char *err);
+bool LcdAdd(const LCD *lcd);
 
 /**
  * @brief Print text on LCD

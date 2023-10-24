@@ -20,6 +20,7 @@
 #include <core/extenders.h>
 #include <core/lcd.h>
 #include <net/notifier.h>
+#include <net/server.h>
 #include <controllers/security.h>
 
 /*********************************************************************/
@@ -175,9 +176,9 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
         lcd->d6 = json_integer_value(json_object_get(value, "d6"));
         lcd->d7 = json_integer_value(json_object_get(value, "d7"));
 
-        if (!LcdAdd(lcd, err)) {
+        if (!LcdAdd(lcd)) {
             json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Failed to add LCD \"%s\": %s", lcd->name, err);
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Failed to add LCD \"%s\"", lcd->name);
             return false;
         }
 
@@ -329,13 +330,19 @@ static bool PlcRead(const char *path)
         return false;
     }
 
+    json_t *server = json_object_get(data, "server");
+    const char *ip = json_string_value(json_object_get(server, "ip"));
+    const unsigned port = json_integer_value(json_object_get(server, "port"));
+    WebServerCredsSet(ip, port);
+    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Web Server at ip: \"%s\" port: \"%u\"", ip, port);
+
     json_t *notifier = json_object_get(data, "notifier");
-    
+
     json_t *jtg = json_object_get(notifier, "telegram");
     const char *bot = json_string_value(json_object_get(jtg, "bot"));
     const unsigned chat = json_integer_value(json_object_get(jtg, "chat"));
     NotifierTelegramCredsSet(bot, chat);
-    LogF(LOG_TYPE_INFO, "CONFIGS", "Add telegram bot Notifier token: \"%s\" chat: \"%u\"", bot, chat);
+    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Telegram bot Notifier token: \"%s\" chat: \"%u\"", bot, chat);
 
     json_t *jsms = json_object_get(notifier, "sms");
     const char *api = json_string_value(json_object_get(jsms, "api"));

@@ -16,6 +16,7 @@
 #include <controllers/controllers.h>
 #include <ftest/ftest.h>
 #include <core/gpio.h>
+#include <net/server.h>
 
 int main(const int argc, const char **argv)
 {
@@ -48,6 +49,13 @@ int main(const int argc, const char **argv)
 
     if (!ControllersStart()) {
         Log(LOG_TYPE_ERROR, "MAIN", "Failed to start controllers");
+        return -1;
+    }
+
+    Log(LOG_TYPE_INFO, "MAIN", "Starting Web Server");
+
+    if (!WebServerStart()) {
+        Log(LOG_TYPE_ERROR, "MAIN", "Failed to start web server");
         return -1;
     }
 

@@ -8,16 +8,28 @@
 /*                                                                   */
 /*********************************************************************/
 
-#ifndef __FTEST_H__
-#define __FTEST_H__
+#ifndef __RESPONSE_H__
+#define __RESPONSE_H__
 
 #include <stdbool.h>
 
-/**
- * @brief Starting Factory Test
- *
- * @return Result of FTtest
- */
-bool FactoryTestStart();
+#include <fcgiapp.h>
+#include <jansson.h>
 
-#endif /* __FTEST_H__ */
+typedef enum {
+    RESPONSE_TYPE_OK,
+    RESPONSE_TYPE_FAIL
+} ResponseType;
+
+/**
+ * @brief Send FastCGI response
+ *
+ * @param type Response type: Success or fail
+ * @param req Request struct
+ * @param root Json response
+ *
+ * @return Returns true/false as result of sending response
+ */
+bool ResponseSend(ResponseType type, FCGX_Request *req, json_t *root);
+
+#endif /* __RESPONSE_H__ */

@@ -14,9 +14,25 @@
 
 #include <fcgi_config.h>
 #include <fcgiapp.h>
-#include <curl/curl.h>
-
+#include <utils/utils.h>
+#include <utils/log.h>
 #include <net/server.h>
+
+#include <net/handlers/securityh.h>
+
+/*********************************************************************/
+/*                                                                   */
+/*                         PRIVATE VARIABLES                         */
+/*                                                                   */
+/*********************************************************************/
+
+static struct {
+    char        ip[STR_LEN];
+    unsigned    port;
+} Server = {
+    .ip = {0},
+    .port = 0
+};
 
 /*********************************************************************/
 /*                                                                   */
@@ -26,41 +42,48 @@
 
 static bool Process(int socketId)
 {
-    FCGX_Request req;
-    char query[255];
+    FCGX_Request    req;
+    GList           *params = NULL;
 
-    if(FCGX_InitRequest(&req, socketId, 0) != 0) {
-        printf("Failed to init request\n");
+    if (FCGX_InitRequest(&req, socketId, 0) != 0) {
+        Log(LOG_TYPE_ERROR, "SERVER", "Failed to init web request");
         return false;
     }
 
     for (;;) {
         if (FCGX_Accept_r(&req) < 0) {
-            printf("failed to accept request\n");
-            return false;
+            Log(LOG_TYPE_ERROR, "SERVER", "Failed to accept request");
+            continue;
         }
 
-        printf("ACCEPT NEW REQ\n");
+        const char *query = FCGX_GetParam("SCRIPT_NAME", req.envp);
+        char *url = FCGX_GetParam("REQUEST_URI", req.envp);
 
-        char *text = FCGX_GetParam("SCRIPT_NAME", req.envp);
-        printf("NAME: %s\n", text);
-        text = FCGX_GetParam("CONTENT_TYPE", req.envp);
-        printf("CONTENT: %s\n", text);
-        text = FCGX_GetParam("CONTENT_LENGTH", req.envp);
-        printf("CONTENT LEN: %s\n", text);
-        text = FCGX_GetParam("REQUEST_URI", req.envp);
-        printf("REQUEST_URI: %s\n", text);
-        text = FCGX_GetParam("REQUEST_METHOD", req.envp);
-        printf("REQUEST_METHOD: %s\n", text);
-       
-        if (!strcmp(text, "POST")) {
-            FCGX_GetStr(query, 255, req.in);
-            printf("BODY: %s\n", query);
+        if (UtilsURIParse(url, &params)) {
+            if (!strcmp(query, SERVER_API_VER "/security")) {
+                if (!HandlerSecurity(&req, &params)) {
+                    Log(LOG_TYPE_ERROR, "SERVER", "Failed to process security controllers get handler");
+                }
+            } else if (!strcmp(query, SERVER_API_VER "/meteo")) {
+
+            } else {
+                FCGX_PutS("Content-type: text/html\r\n", req.out);
+                FCGX_PutS("\r\n", req.out);
+                FCGX_PutS("<html><h1>404 NOT FOUND</h1></html>\r\n", req.out);
+            }
+        } else {
+            Log(LOG_TYPE_ERROR, "SERVER", "Incorrect request");
         }
 
-        FCGX_PutS("Content-type: text/html\r\n", req.out);
-        FCGX_PutS("\r\n", req.out);
-        FCGX_PutS("<html><h1>HALLO</h1></html>\r\n", req.out);
+        if (params != NULL) {
+            for (GList *p = params; p != NULL; p = p->next) {
+                UtilsReqParam *param = (UtilsReqParam *)p->data;
+                free(param);
+            }
+            g_list_free(params);
+            params = NULL;
+        }
+
         FCGX_Finish_r(&req);
     }
     return true;
@@ -72,17 +95,36 @@ static bool Process(int socketId)
 /*                                                                   */
 /*********************************************************************/
 
-bool WebServerStart(const char *host, unsigned port)
+void WebServerCredsSet(const char *host, unsigned port)
 {
-    int socketId = 0;
+    strncpy(Server.ip, host, STR_LEN);
+    Server.port = port;
+}
 
-    printf("Starting server\n");
+bool WebServerStart()
+{
+    /*thrd_t  th;
+    int     res;
+
+    thrd_create(th, &WebServerThread, NULL);
+    thrd_join(th, &res);
+
+    if (res < 0) {
+        return false;
+    }*/
+
+    int     socketId = 0;
+    char    full_path[EXT_STR_LEN];
+
+    snprintf(full_path, EXT_STR_LEN, "%s:%d", Server.ip, Server.port);
+
     FCGX_Init();
-    socketId = FCGX_OpenSocket("127.0.0.1:9090", 20);
+    socketId = FCGX_OpenSocket(full_path, 20);
     if (socketId < 0) {
-        printf("Failed to start socket\n");
         return false;
     }
+
     Process(socketId);
+
     return true;
 }
