@@ -22,6 +22,7 @@
 #include <net/notifier.h>
 #include <net/server.h>
 #include <controllers/security.h>
+#include <db/database.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -200,6 +201,7 @@ static bool ControllersRead(const char *path)
     size_t          index, ext_index;
     json_t          *value, *ext_value;
     char            err[ERROR_STR_LEN];
+    Database        db;
 
     snprintf(full_path, STR_LEN, "%s%s", path, CONFIGS_CONTROLLERS_FILE);
 
@@ -294,7 +296,7 @@ static bool ControllersRead(const char *path)
 
             SecuritySensorAdd(ctrl, sensor);
 
-            LogF(LOG_TYPE_INFO, "CONFIGS", "Add Security sensor: \"%s\" gpio: \"%s\" type: \"%s\" telegram: \"%d\" sms: \"%d\" alarm: \"%d\"",
+            LogF(LOG_TYPE_INFO, "CONFIGS", "Add Security sensor name: \"%s\" gpio: \"%s\" type: \"%s\" telegram: \"%d\" sms: \"%d\" alarm: \"%d\"",
                 sensor->name, json_string_value(json_object_get(ext_value, "gpio")),
                 type_str, sensor->telegram, sensor->sms, sensor->alarm);
         }

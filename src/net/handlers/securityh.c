@@ -50,7 +50,7 @@ static bool HandlerStatusSet(FCGX_Request *req, GList **params)
        ResponseFailSendF(req, "SECURITYH", "Security controller \"%s\" not found", ctrl_name);
     }
 
-    if (!SecurityStatusSet(ctrl, status)) {
+    if (!SecurityStatusSet(ctrl, status, true)) {
        ResponseFailSendF(req, "SECURITYH", "Security controller \"%s\" failed to switch status to \"%d\"", ctrl_name, status);
     }
 

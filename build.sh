@@ -1,12 +1,67 @@
 #!/bin/bash
 
-for param in "$*"
-do
-    if [[ $param == "--install" ]] ; then
-        apt update && apt install libfcgi-dev libglib2.0-dev libcurl4-openssl-dev \
-            libjansson-dev cmake clang libglib2.0-dev libsqlite3-dev
+function find_libs() {
+    if [[ ! -e "/usr/include/arm-linux-gnueabihf/curl/curl.h" ]] ; then
+        return 0
     fi
-done
+    if [[ ! -e "/usr/include/sqlite3.h" ]] ; then
+        return 0
+    fi
+    if [[ ! -e "/usr/include/fcgiapp.h" ]] ; then
+        return 0
+    fi
+    if [[ ! -e "/usr/include/glib-2.0/glib.h" ]] ; then
+        return 0
+    fi
+    if [[ ! -e "/usr/include/jansson.h" ]] ; then
+        return 0
+    fi
+    if [[ ! -e "/usr/bin/cmake" ]] ; then
+        return 0
+    fi
+    if [[ ! -e "/usr/bin/clang" ]] ; then
+        return 0
+    fi
+    if [[ ! -e "/usr/bin/make" ]] ; then
+        return 0
+    fi
+    if [[ ! -e "/usr/bin/git" ]] ; then
+        return 0
+    fi
+    return 1
+}
+
+find_libs
+if [[ $? -eq 0 ]] ; then
+    apt update && apt install --yes libfcgi-dev libglib2.0-dev libcurl4-openssl-dev \
+        libjansson-dev cmake clang make libglib2.0-dev libsqlite3-dev git
+fi
+
+if [[ ! -e "/usr/lib/libwiringPi.so" ]] ; then
+    git clone https://github.com/orangepi-xunlong/wiringOP.git
+    cd wiringOP
+    chmod +x build && ./build
+    cd -
+    rm -rf wiringOP
+fi
+
+cat /etc/modules | grep -r "w1-therm" > /dev/null
+if [[ ! $? -eq 0 ]] ; then
+    echo "w1-sunxi" >> /etc/modules
+    echo "w1-gpio" >> /etc/modules
+    echo "w1-therm" >> /etc/modules
+fi
+
+cat /boot/armbianEnv.txt | grep "param_w1_pin" > /dev/null
+if [[ ! $? -eq 0 ]] ; then
+    echo "overlays=w1-gpio" >> /boot/armbianEnv.txt
+    echo "param_w1_pin=PA10" >> /boot/armbianEnv.txt
+fi
+
+cat /etc/modprobe.d/w1.conf | grep "slave_ttl=" > /dev/null
+if [[ ! $? -eq 0 ]] ; then
+    echo "options wire timeout=1 slave_ttl=1" > /etc/modprobe.d/w1.conf
+fi
 
 cmake .
-cmake --build .
+cmake --build . -j4

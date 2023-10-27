@@ -18,6 +18,8 @@
 #include <utils/utils.h>
 #include <core/gpio.h>
 
+#define SECURITY_DB_FILE    "security.db"
+
 typedef enum {
     SECURITY_SENSOR_REED,
     SECURITY_SENSOR_MICRO_WAVE,
@@ -91,10 +93,22 @@ bool SecurityControllersStart();
  * 
  * @param ctrl Current security controller
  * @param status New security status
+ * @param save Save status to DB
  * 
  * @return true/false as result of status switching
  */
-bool SecurityStatusSet(SecurityController *ctrl, bool status);
+bool SecurityStatusSet(SecurityController *ctrl, bool status, bool save);
+
+/**
+ * @brief Switch alarm status for security controller
+ * 
+ * @param ctrl Current security controller
+ * @param status New security alarm status
+ * @param save Save status to DB
+ * 
+ * @return true/false as result of status switching
+ */
+bool SecurityAlarmSet(SecurityController *ctrl, bool status, bool save);
 
 /**
  * @brief Get current security status from security controller

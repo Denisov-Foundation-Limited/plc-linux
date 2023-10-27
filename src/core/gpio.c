@@ -92,6 +92,9 @@ GList **GpioPinsGet()
 
 bool GpioPinRead(const GpioPin *pin)
 {
+    if (pin->pin == 0) {
+        return 0;
+    }
 #ifdef __arm__
     return digitalRead(pin->pin);
 #endif
@@ -100,6 +103,9 @@ bool GpioPinRead(const GpioPin *pin)
 
 int GpioPinReadA(const GpioPin *pin)
 {
+    if (pin->pin == 0) {
+        return 0;
+    }
 #ifdef __arm__
     return analogRead(pin->pin);
 #endif
@@ -108,6 +114,9 @@ int GpioPinReadA(const GpioPin *pin)
 
 void GpioPinWrite(const GpioPin *pin, bool state)
 {
+    if (pin->pin == 0) {
+        return;
+    }
 #ifdef __arm__
     digitalWrite(pin->pin, (state == true) ? HIGH : LOW);
 #endif
@@ -115,6 +124,9 @@ void GpioPinWrite(const GpioPin *pin, bool state)
 
 void GpioPinWriteA(const GpioPin *pin, int value)
 {
+    if (pin->pin == 0) {
+        return;
+    }
 #ifdef __arm__
     analogWrite(pin->pin, value);
 #endif

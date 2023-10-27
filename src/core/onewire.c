@@ -44,6 +44,8 @@ bool OneWireDevicesList(GList **devices)
         }
     }
 
+    g_dir_close(dir);
+
     return true;
 }
 
@@ -73,6 +75,8 @@ bool OneWireKeysRead(GList **keys)
             g_strfreev(parts);
         }
     }
+
+    g_dir_close(dir);
 
     return true;
 }

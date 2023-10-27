@@ -14,6 +14,7 @@
 #include <utils/log.h>
 #include <core/onewire.h>
 #include <net/notifier.h>
+#include <db/database.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -21,7 +22,8 @@
 /*                                                                   */
 /*********************************************************************/
 
-static GList *security = NULL;
+static GList    *security = NULL;
+static mtx_t    sec_mtx;
 
 /*********************************************************************/
 /*                                                                   */
@@ -29,7 +31,37 @@ static GList *security = NULL;
 /*                                                                   */
 /*********************************************************************/
 
-static void AlarmStart()
+static bool StatusSave(SecurityController *ctrl, const char *name, bool status)
+{
+    Database    db;
+    char        sql[STR_LEN];
+    char        con[STR_LEN];
+
+    mtx_lock(&sec_mtx);
+
+    if (!DatabaseOpen(&db, SECURITY_DB_FILE)) {
+        DatabaseClose(&db);
+        mtx_unlock(&sec_mtx);
+        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to load Security database");
+        return false;
+    }
+
+    snprintf(sql, STR_LEN, "%s=%d", name, (int)status);
+    snprintf(con, STR_LEN, "name=\"%s\"", ctrl->name);
+
+    if (!DatabaseUpdate(&db, "controllers", sql, con)) {
+        DatabaseClose(&db);
+        mtx_unlock(&sec_mtx);
+        LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to save Security controller \"%s\" status to DB", ctrl->name);
+        return false;
+    }
+
+    DatabaseClose(&db);
+    mtx_unlock(&sec_mtx);
+    return true;
+}
+
+static void AlarmHandler()
 {
     for (GList *c = security; c != NULL; c = c->next) {
         SecurityController *ctrl = (SecurityController *)c->data;
@@ -47,13 +79,33 @@ static void AlarmStart()
     }
 }
 
+static int BuzzerThread(void *data)
+{
+    SecurityController *ctrl = (SecurityController *)data;
+
+    if (ctrl->status) {
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], true);
+        thrd_sleep(&(struct timespec){ .tv_nsec = 200000000 }, NULL);
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
+        thrd_sleep(&(struct timespec){ .tv_nsec = 200000000 }, NULL);
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], true);
+        thrd_sleep(&(struct timespec){ .tv_nsec = 200000000 }, NULL);
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
+    } else {
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], true);
+        thrd_sleep(&(struct timespec){ .tv_nsec = 500000000 }, NULL);
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
+    }
+
+    return 0;
+}
+
 static int AlarmThread(void *data)
 {
     for (;;) {
-        AlarmStart();
+        AlarmHandler();
         thrd_sleep(&(struct timespec){ .tv_nsec = 500000000 }, NULL);
     }
-
     return 0;
 }
 
@@ -93,10 +145,7 @@ static int SensorsThread(void *data)
                             LogF(LOG_TYPE_INFO, "SECURITY", "Security sensor \"%s\" detected!", sensor->name);
 
                             if (sensor->alarm && !ctrl->alarm) {
-                                ctrl->alarm = true;
-                                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], true);
-                                AlarmStart();
-                                LogF(LOG_TYPE_INFO, "SECURITY", "Alarm was started");
+                                SecurityAlarmSet(ctrl, true, true);
                             }
 
                             snprintf(msg, STR_LEN, "Security+sensor+%s+detected", sensor->name);
@@ -168,7 +217,7 @@ static int KeysThread(void *data)
                     SecurityKey *skey = (SecurityKey *)ck->data;
                     if (!strcmp(data->value, skey->value)) {
                         found = true;
-                        if (!SecurityStatusSet(ctrl, !SecurityStatusGet(ctrl))) {
+                        if (!SecurityStatusSet(ctrl, !SecurityStatusGet(ctrl), true)) {
                             LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to switch security status by iButton for \"%s\" controller", ctrl->name);
                         }
                         break;
@@ -240,16 +289,13 @@ bool SecurityControllersStart()
     return true;
 }
 
-bool SecurityStatusSet(SecurityController *ctrl, bool status)
+bool SecurityStatusSet(SecurityController *ctrl, bool status, bool save)
 {
+    thrd_t  bzr_th;
+
     ctrl->status = status;
 
     if (!status) {
-        ctrl->alarm = false;
-
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], false);
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], false);
         GpioPinWrite(ctrl->gpio[SECURITY_GPIO_STATUS_LED], false);
 
         for (GList *s = ctrl->sensors; s != NULL; s = s->next) {
@@ -258,9 +304,43 @@ bool SecurityStatusSet(SecurityController *ctrl, bool status)
         }
 
         LogF(LOG_TYPE_INFO, "SECURITY", "Security controller \"%s\" disabled", ctrl->name);
+
+        SecurityAlarmSet(ctrl, false, true);
     } else {
         GpioPinWrite(ctrl->gpio[SECURITY_GPIO_STATUS_LED], true);
         LogF(LOG_TYPE_INFO, "SECURITY", "Security controller \"%s\" enabled", ctrl->name);
+    }
+
+    thrd_create(&bzr_th, &BuzzerThread, (void *)ctrl);
+
+    if (save) {
+        if (!StatusSave(ctrl, "status", status)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool SecurityAlarmSet(SecurityController *ctrl, bool status, bool save)
+{
+    ctrl->alarm = status;
+
+    if (status) {
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], true);
+        AlarmHandler();
+        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller alarm \"%s\" enabled", ctrl->name);
+    } else {
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], false);
+        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], false);
+        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller alarm \"%s\" disabled", ctrl->name);
+    }
+
+    if (save) {
+        if (!StatusSave(ctrl, "alarm", status)) {
+            return false;
+        }
     }
 
     return true;

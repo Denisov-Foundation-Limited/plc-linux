@@ -18,6 +18,7 @@
 #include <core/gpio.h>
 #include <net/server.h>
 #include <db/database.h>
+#include <db/dbloader.h>
 
 int main(const int argc, const char **argv)
 {
@@ -70,6 +71,13 @@ int main(const int argc, const char **argv)
         }
         Log(LOG_TYPE_INFO, "MAIN", "Exiting!");
         return 0;
+    }
+
+    Log(LOG_TYPE_INFO, "MAIN", "Loading database states");
+
+    if (!DatabaseLoaderLoad()) {
+        Log(LOG_TYPE_ERROR, "MAIN", "Failed to load Database");
+        return -1;
     }
 
     Log(LOG_TYPE_INFO, "MAIN", "Starting controllers");
