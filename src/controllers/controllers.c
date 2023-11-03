@@ -10,7 +10,9 @@
 
 #include <controllers/controllers.h>
 #include <controllers/security.h>
+#include <controllers/meteo.h>
 #include <utils/log.h>
+#include <controllers/socket.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -20,8 +22,16 @@
 
 bool ControllersStart()
 {
-    if (!SecurityControllersStart()) {
-        Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Security controllers");
+    if (!SecurityControllerStart()) {
+        Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Security controller");
+    }
+
+    if (!MeteoControllerStart()) {
+        Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Meteo controller");
+    }
+
+    if (!SocketControllerStart()) {
+        Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Socket controller");
     }
 
     return true;

@@ -13,12 +13,20 @@
 
 #include <stdbool.h>
 
-#include <glib.h>
+#include <glib-2.0/glib.h>
 
 #include <utils/utils.h>
 #include <core/gpio.h>
 
 #define SECURITY_DB_FILE    "security.db"
+
+#define SECURITY_DETECTED_TIME_MAX_SEC  10
+#define SECURITY_SENSOR_TIME_MAX_SEC    60
+
+typedef enum {
+    SECURITY_SAVE_TYPE_STATUS,
+    SECURITY_SAVE_TYPE_ALARM
+} SecurityStatusType;
 
 typedef enum {
     SECURITY_SENSOR_REED,
@@ -34,8 +42,18 @@ typedef enum {
     SECURITY_GPIO_MAX
 } SecurityGpio;
 
+typedef enum {
+    SECURITY_SCENARIO_IN,
+    SECURITY_SCENARIO_OUT
+} SecurityScenarioType;
+
+typedef enum {
+    SECURITY_CTRL_SOCKET
+} SecurityScenarioCtrl;
+
 typedef struct {
-    char    value[SHORT_STR_LEN];
+    char    name[SHORT_STR_LEN];
+    char    id[SHORT_STR_LEN];
 } SecurityKey;
 
 typedef struct {
@@ -46,112 +64,97 @@ typedef struct {
     bool                sms;
     bool                alarm;
     bool                detected;
+    unsigned            counter;
 } SecuritySensor;
 
 typedef struct {
     char    name[SHORT_STR_LEN];
-    GList   *sensors;
-    GList   *keys;
-    GpioPin *gpio[SECURITY_GPIO_MAX];
     bool    status;
-    bool    alarm;
-    bool    last_alarm;
-} SecurityController;
+} SecurityScenarioSocket;
+
+typedef struct {
+    SecurityScenarioType    type;
+    SecurityScenarioCtrl    ctrl;
+    SecurityScenarioSocket  socket;
+} SecurityScenario;
+
+bool SecurityScenarioAdd(SecurityScenario *scenario);
 
 /**
- * @brief Add new Security controller to list
+ * @brief Check security key for all controllers
  * 
- * @param ctrl Current security controller
+ * @param key Security key id
+ * 
+ * @return True if key found for controller, False if not found
  */
-void SecurityControllerAdd(const SecurityController *ctrl);
+bool SecurityKeyCheck(const char *key);
 
-/**
- * @brief Get security controller by name
- * 
- * @param name Security controller name
- * 
- * @return Found security controller or NULL if not found
- */
-SecurityController *SecurityControllerGet(const char *name);
-
-/**
- * @brief Get all security controllers
- * 
- * @return List of security controllers
- */
-GList **SecurityControllersGet();
+void SecurityGpioSet(SecurityGpio id, GpioPin *gpio);
 
 /**
  * @brief Start all security controllers
  * 
  * @return true/false as result of controllers start
  */
-bool SecurityControllersStart();
+bool SecurityControllerStart();
 
 /**
  * @brief Switch status for security controller
  * 
- * @param ctrl Current security controller
  * @param status New security status
  * @param save Save status to DB
  * 
  * @return true/false as result of status switching
  */
-bool SecurityStatusSet(SecurityController *ctrl, bool status, bool save);
+bool SecurityStatusSet(bool status, bool save);
 
 /**
  * @brief Switch alarm status for security controller
  * 
- * @param ctrl Current security controller
  * @param status New security alarm status
  * @param save Save status to DB
  * 
  * @return true/false as result of status switching
  */
-bool SecurityAlarmSet(SecurityController *ctrl, bool status, bool save);
+bool SecurityAlarmSet(bool status, bool save);
+
+bool SecurityAlarmGet();
 
 /**
  * @brief Get current security status from security controller
  * 
- * @param ctrl Current security controller
- * 
  * @return Current security status for current controller
  */
-bool SecurityStatusGet(const SecurityController *ctrl);
+bool SecurityStatusGet();
 
 /**
  * @brief Add new iButton key for controller
  * 
- * @param ctrl Current security controller
  * @param key New security iButton key
  */
-void SecurityKeyAdd(SecurityController *ctrl, const SecurityKey *key);
+void SecurityKeyAdd(const SecurityKey *key);
 
 /**
  * @brief Add new security sensor for controller
  * 
- * @param ctrl Current security controller
  * @param sensor New security sensor 
  */
-void SecuritySensorAdd(SecurityController *ctrl, const SecuritySensor *sensor);
+void SecuritySensorAdd(const SecuritySensor *sensor);
 
 /**
  * @brief Get security sensor from controller by name
  * 
- * @param ctrl Current security controller
  * @param name Security sensor name
  * 
  * @return Found security sensor or NULL if not found
  */
-SecuritySensor *SecuritySensorGet(const SecurityController *ctrl, const char *name);
+SecuritySensor *SecuritySensorGet(const const char *name);
 
 /**
  * @brief Get all security controller's sensors
  * 
- * @param ctrl Current security controller
- * 
  * @return List of sensors for current security controller
  */
-GList **SecuritySensorsGet(SecurityController *ctrl);
+GList **SecuritySensorsGet();
 
 #endif /* __SECURITY_CTRL_H__ */

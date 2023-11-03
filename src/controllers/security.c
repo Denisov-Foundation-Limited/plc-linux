@@ -15,6 +15,7 @@
 #include <core/onewire.h>
 #include <net/notifier.h>
 #include <db/database.h>
+#include <controllers/socket.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -22,8 +23,23 @@
 /*                                                                   */
 /*********************************************************************/
 
-static GList    *security = NULL;
-static mtx_t    sec_mtx;
+static struct _Security {
+    GList           *sensors;
+    GList           *keys;
+    GList           *scenario;
+    GpioPin         *gpio[SECURITY_GPIO_MAX];
+    mtx_t           sec_mtx;
+    bool            status;
+    bool            alarm;
+    bool            last_alarm;
+} Security = {
+    .scenario = NULL,
+    .sensors = NULL,
+    .keys = NULL,
+    .status = false,
+    .alarm = false,
+    .last_alarm = false,
+};
 
 /*********************************************************************/
 /*                                                                   */
@@ -31,70 +47,114 @@ static mtx_t    sec_mtx;
 /*                                                                   */
 /*********************************************************************/
 
-static bool StatusSave(SecurityController *ctrl, const char *name, bool status)
+static void ScenarioRun(bool status)
+{
+    for (GList *s = Security.scenario; s != NULL; s = s->next) {
+        SecurityScenario *scenario = (SecurityScenario *)s->data;
+
+        if ((scenario->type == SECURITY_SCENARIO_IN && !status) || (scenario->type == SECURITY_SCENARIO_OUT && status)) {
+            if (scenario->ctrl == SECURITY_CTRL_SOCKET) {
+                Socket *socket = SocketGet(scenario->socket.name);
+
+                if (socket == NULL) {
+                    LogF(LOG_TYPE_ERROR, "SECURITY", "Can not find socket \"%s\"", scenario->socket.name);
+                    continue;
+                }
+
+                if (!SocketStatusSet(socket, scenario->socket.status, true)) {
+                    LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to switch socket \"%s\" status", scenario->socket.name);
+                }
+            }
+        }
+    }
+}
+
+static bool StatusSave(SecurityStatusType type, bool status)
 {
     Database    db;
     char        sql[STR_LEN];
     char        con[STR_LEN];
 
-    mtx_lock(&sec_mtx);
+    mtx_lock(&Security.sec_mtx);
 
     if (!DatabaseOpen(&db, SECURITY_DB_FILE)) {
         DatabaseClose(&db);
-        mtx_unlock(&sec_mtx);
+        mtx_unlock(&Security.sec_mtx);
         Log(LOG_TYPE_ERROR, "SECURITY", "Failed to load Security database");
         return false;
     }
 
-    snprintf(sql, STR_LEN, "%s=%d", name, (int)status);
-    snprintf(con, STR_LEN, "name=\"%s\"", ctrl->name);
+    if (type == SECURITY_SAVE_TYPE_STATUS) {
+        snprintf(sql, STR_LEN, "status=%d", (int)status);
+    } else {
+        snprintf(sql, STR_LEN, "alarm=%d", (int)status);
+    }
 
-    if (!DatabaseUpdate(&db, "controllers", sql, con)) {
+    if (!DatabaseUpdate(&db, "security", sql, "name=\"controller\"")) {
         DatabaseClose(&db);
-        mtx_unlock(&sec_mtx);
-        LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to save Security controller \"%s\" status to DB", ctrl->name);
+        mtx_unlock(&Security.sec_mtx);
+        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to update Security database");
         return false;
     }
 
     DatabaseClose(&db);
-    mtx_unlock(&sec_mtx);
+    mtx_unlock(&Security.sec_mtx);
     return true;
 }
 
 static void AlarmHandler()
 {
-    for (GList *c = security; c != NULL; c = c->next) {
-        SecurityController *ctrl = (SecurityController *)c->data;
-        if (ctrl->alarm) {
-            if (ctrl->last_alarm) {
-                ctrl->last_alarm = false;
-                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
-                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], false);
-            } else {
-                ctrl->last_alarm = true;
-                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], true);
-                GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], true);
-            }
+    if (Security.alarm) {
+        if (Security.last_alarm) {
+            Security.last_alarm = false;
+            GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
+            GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_LED], false);
+        } else {
+            Security.last_alarm = true;
+            GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
+            GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_LED], true);
         }
     }
 }
 
 static int BuzzerThread(void *data)
 {
-    SecurityController *ctrl = (SecurityController *)data;
-
-    if (ctrl->status) {
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], true);
-        thrd_sleep(&(struct timespec){ .tv_nsec = 200000000 }, NULL);
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
-        thrd_sleep(&(struct timespec){ .tv_nsec = 200000000 }, NULL);
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], true);
-        thrd_sleep(&(struct timespec){ .tv_nsec = 200000000 }, NULL);
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
+    if (Security.status) {
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
+        UtilsMsecSleep(100);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
+        UtilsMsecSleep(100);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
+        UtilsMsecSleep(100);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
     } else {
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], true);
-        thrd_sleep(&(struct timespec){ .tv_nsec = 500000000 }, NULL);
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
+        UtilsMsecSleep(300);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
+    }
+    return 0;
+}
+
+static int NotifyStatusThread(void *data)
+{
+    char    msg[STR_LEN];
+
+    if (Security.status) {
+        snprintf(msg, STR_LEN, "ОХРАНА+сигнализация+включена");
+    } else {
+        snprintf(msg, STR_LEN, "ОХРАНА+сигнализация+отключена");
+    }
+
+    if (!NotifierTelegramSend(msg)) {
+        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send status telegram message");
+    } else {
+        Log(LOG_TYPE_INFO, "SECURITY", "Status message was sended to telegram");
+    }
+
+    if (!NotifierSmsSend(msg)) {
+        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send security status sms message");
+    } else {
+        Log(LOG_TYPE_INFO, "SECURITY", "Status sms was sended to phone");
     }
 
     return 0;
@@ -104,74 +164,88 @@ static int AlarmThread(void *data)
 {
     for (;;) {
         AlarmHandler();
-        thrd_sleep(&(struct timespec){ .tv_nsec = 500000000 }, NULL);
+        UtilsMsecSleep(500);
     }
     return 0;
 }
 
 static int SensorsThread(void *data)
 {
-    char    msg[STR_LEN];
+    char        msg[STR_LEN];
+    unsigned    timer = 0;
 
     for (;;) {
-        for (GList *c = security; c != NULL; c = c->next) {
-            SecurityController *ctrl = (SecurityController *)c->data;
-            if (ctrl->status) {
-                for (GList *s = ctrl->sensors; s != NULL; s = s->next) {
-                    SecuritySensor *sensor = (SecuritySensor *)s->data;
-                    if (!sensor->detected) {
+        timer++;
 
-                        switch (sensor->type) {
-                            case SECURITY_SENSOR_MICRO_WAVE:
-                                if (!GpioPinRead(sensor->gpio)) {
-                                    sensor->detected = true;
-                                }
-                                break;
+        if (timer > SECURITY_SENSOR_TIME_MAX_SEC) {
+            timer = 0;
+        }
 
-                            case SECURITY_SENSOR_PIR:
-                                if (GpioPinRead(sensor->gpio)) {
-                                    sensor->detected = true;
-                                }
-                                break;
+        if (Security.status) {
+            for (GList *s = Security.sensors; s != NULL; s = s->next) {
+                SecuritySensor *sensor = (SecuritySensor *)s->data;
 
-                            case SECURITY_SENSOR_REED:
-                                if (GpioPinRead(sensor->gpio)) {
-                                    sensor->detected = true;
-                                }
-                                break;
+                if (sensor->detected) {
+                    continue;
+                }
+
+                switch (sensor->type) {
+                    case SECURITY_SENSOR_MICRO_WAVE:
+                        if (!GpioPinRead(sensor->gpio)) {
+                            sensor->counter++;
                         }
+                        break;
 
-                        if (sensor->detected) {
-                            LogF(LOG_TYPE_INFO, "SECURITY", "Security sensor \"%s\" detected!", sensor->name);
+                    case SECURITY_SENSOR_PIR:
+                        if (GpioPinRead(sensor->gpio)) {
+                            sensor->counter++;
+                        }
+                        break;
 
-                            if (sensor->alarm && !ctrl->alarm) {
-                                SecurityAlarmSet(ctrl, true, true);
-                            }
+                    case SECURITY_SENSOR_REED:
+                        if (!GpioPinRead(sensor->gpio)) {
+                            sensor->detected = true;
+                        }
+                        break;
+                }
 
-                            snprintf(msg, STR_LEN, "Security+sensor+%s+detected", sensor->name);
+                if (timer == SECURITY_SENSOR_TIME_MAX_SEC) {
+                    if (sensor->counter >= SECURITY_DETECTED_TIME_MAX_SEC) {
+                        sensor->counter = 0;
+                        sensor->detected = true;
+                    } else {
+                        sensor->counter = 0;
+                    }
+                }
 
-                            if (sensor->sms) {
-                                if (!NotifierSmsSend(msg)) {
-                                    Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send sms message");
-                                } else {
-                                    Log(LOG_TYPE_INFO, "SECURITY", "Alarm sms was sended to phone");
-                                }
-                            }
+                if (sensor->detected) {
+                    LogF(LOG_TYPE_INFO, "SECURITY", "Security sensor \"%s\" detected!", sensor->name);
 
-                            if (sensor->telegram) {
-                                if (!NotifierTelegramSend(msg)) {
-                                    Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send telegram message");
-                                } else {
-                                    Log(LOG_TYPE_INFO, "SECURITY", "Alarm message was sended to telegram");
-                                }
-                            }
+                    if (sensor->alarm && !Security.alarm) {
+                        SecurityAlarmSet(true, true);
+                    }
+
+                    snprintf(msg, STR_LEN, "ОХРАНА+Обнаружено+проникновение+%s", sensor->name);
+
+                    if (sensor->sms) {
+                        if (!NotifierSmsSend(msg)) {
+                            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send sms message");
+                        } else {
+                            Log(LOG_TYPE_INFO, "SECURITY", "Alarm sms was sended to phone");
+                        }
+                    }
+
+                    if (sensor->telegram) {
+                        if (!NotifierTelegramSend(msg)) {
+                            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send telegram message");
+                        } else {
+                            Log(LOG_TYPE_INFO, "SECURITY", "Alarm message was sended to telegram");
                         }
                     }
                 }
             }
         }
-
-        thrd_sleep(&(struct timespec){ .tv_sec = 1 }, NULL);
+        UtilsSecSleep(1);
     }
 
     return 0;
@@ -188,11 +262,13 @@ static int KeysThread(void *data)
                 ow_error = true;
                 Log(LOG_TYPE_ERROR, "SECURITY", "Failed to read iButton codes");
             }
+
             if (cur_keys != NULL) {
                 g_list_free(cur_keys);
                 cur_keys = NULL;
             }
-            thrd_sleep(&(struct timespec){ .tv_sec = 2 }, NULL);
+
+            UtilsSecSleep(1);
             continue;
         } else {
             if (ow_error) {
@@ -202,31 +278,18 @@ static int KeysThread(void *data)
         }
 
         if (cur_keys == NULL) {
-            thrd_sleep(&(struct timespec){ .tv_sec = 3 }, NULL);
+            UtilsSecSleep(1);
             continue;
         }
 
         for (GList *k = cur_keys; k != NULL; k = k->next) {
             OneWireData *data = (OneWireData *)k->data;
-            bool found = false;
 
-            for (GList *c = security; c != NULL; c = c->next) {
-                SecurityController *ctrl = (SecurityController *)c->data;
-
-                for (GList *ck = ctrl->keys; ck != NULL; ck = ck->next) {
-                    SecurityKey *skey = (SecurityKey *)ck->data;
-                    if (!strcmp(data->value, skey->value)) {
-                        found = true;
-                        if (!SecurityStatusSet(ctrl, !SecurityStatusGet(ctrl), true)) {
-                            LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to switch security status by iButton for \"%s\" controller", ctrl->name);
-                        }
-                        break;
-                    }
-                }
-            }
-
-            if (!found) {
-                LogF(LOG_TYPE_ERROR, "SECURITY", "Unknown security key: \"%s\"", data->value);
+            if (SecurityKeyCheck(data->value)) {
+                LogF(LOG_TYPE_INFO, "SECURITY", "Detected valid key: \"%s\"", data->value);
+                UtilsSecSleep(5);
+            } else {
+                LogF(LOG_TYPE_ERROR, "SECURITY", "Invalid security key: \"%s\"", data->value);
             }
 
             if (data != NULL) {
@@ -239,7 +302,7 @@ static int KeysThread(void *data)
             cur_keys = NULL;
         }
 
-        thrd_sleep(&(struct timespec){ .tv_sec = 3 }, NULL);
+        UtilsSecSleep(1);
     }
 
     return 0;
@@ -251,36 +314,37 @@ static int KeysThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
-void SecurityControllerAdd(const SecurityController *ctrl)
+bool SecurityScenarioAdd(SecurityScenario *scenario)
 {
-    security = g_list_append(security, (void *)ctrl);
+    Security.scenario = g_list_append(Security.scenario, scenario);
 }
 
-SecurityController *SecurityControllerGet(const char *name)
+void SecurityGpioSet(SecurityGpio id, GpioPin *gpio)
 {
-    for (GList *c = security; c != NULL; c = c->next) {
-        SecurityController *ctrl = (SecurityController *)c->data;
-        if (!strcmp(ctrl->name, name)) {
-            return ctrl;
+    Security.gpio[id] = gpio;
+}
+
+bool SecurityKeyCheck(const char *key)
+{
+    for (GList *ck = Security.keys; ck != NULL; ck = ck->next) {
+        SecurityKey *skey = (SecurityKey *)ck->data;
+
+        if (!strcmp(key, skey->id)) {
+            if (!SecurityStatusSet(!SecurityStatusGet(), true)) {
+                LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to switch security status by iButton");
+            }
+            return true;
         }
     }
-    return NULL;
+
+    return false;
 }
 
-GList **SecurityControllersGet()
-{
-    return &security;
-}
-
-bool SecurityControllersStart()
+bool SecurityControllerStart()
 {
     thrd_t  sens_th, keys_th, alrm_th;
 
-    if (g_list_length(security) == 0) {
-        return true;
-    }
-
-    Log(LOG_TYPE_INFO, "SECURITY", "Starting Security controllers");
+    Log(LOG_TYPE_INFO, "SECURITY", "Starting Security controller");
 
     thrd_create(&sens_th, &SensorsThread, NULL);
     thrd_create(&keys_th, &KeysThread, NULL);
@@ -289,56 +353,61 @@ bool SecurityControllersStart()
     return true;
 }
 
-bool SecurityStatusSet(SecurityController *ctrl, bool status, bool save)
+bool SecurityStatusSet(bool status, bool save)
 {
     thrd_t  bzr_th;
+    thrd_t  ntf_th;
 
-    ctrl->status = status;
+    Security.status = status;
 
     if (!status) {
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_STATUS_LED], false);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_STATUS_LED], false);
 
-        for (GList *s = ctrl->sensors; s != NULL; s = s->next) {
+        for (GList *s = Security.sensors; s != NULL; s = s->next) {
             SecuritySensor *sensor = (SecuritySensor *)s->data;
             sensor->detected = false;
+            sensor->counter = 0;
         }
 
-        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller \"%s\" disabled", ctrl->name);
+        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller disabled");
 
-        SecurityAlarmSet(ctrl, false, true);
+        SecurityAlarmSet(false, true);
     } else {
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_STATUS_LED], true);
-        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller \"%s\" enabled", ctrl->name);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_STATUS_LED], true);
+        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller enabled");
     }
 
-    thrd_create(&bzr_th, &BuzzerThread, (void *)ctrl);
+    thrd_create(&bzr_th, &BuzzerThread, NULL);
+    thrd_create(&ntf_th, &NotifyStatusThread, NULL);
 
     if (save) {
-        if (!StatusSave(ctrl, "status", status)) {
+        if (!StatusSave(SECURITY_SAVE_TYPE_STATUS, status)) {
             return false;
         }
     }
 
+    ScenarioRun(status);
+
     return true;
 }
 
-bool SecurityAlarmSet(SecurityController *ctrl, bool status, bool save)
+bool SecurityAlarmSet(bool status, bool save)
 {
-    ctrl->alarm = status;
+    Security.alarm = status;
 
     if (status) {
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], true);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_RELAY], true);
         AlarmHandler();
-        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller alarm \"%s\" enabled", ctrl->name);
+        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller alarm enabled");
     } else {
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_BUZZER], false);
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_LED], false);
-        GpioPinWrite(ctrl->gpio[SECURITY_GPIO_ALARM_RELAY], false);
-        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller alarm \"%s\" disabled", ctrl->name);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_LED], false);
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_RELAY], false);
+        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller alarm disabled");
     }
 
     if (save) {
-        if (!StatusSave(ctrl, "alarm", status)) {
+        if (!StatusSave(SECURITY_SAVE_TYPE_ALARM, status)) {
             return false;
         }
     }
@@ -346,19 +415,24 @@ bool SecurityAlarmSet(SecurityController *ctrl, bool status, bool save)
     return true;
 }
 
-bool SecurityStatusGet(const SecurityController *ctrl)
+bool SecurityAlarmGet()
 {
-    return ctrl->status;
+    return Security.alarm;
 }
 
-void SecuritySensorAdd(SecurityController *ctrl, const SecuritySensor *sensor)
+bool SecurityStatusGet()
 {
-    ctrl->sensors = g_list_append(ctrl->sensors, (void *)sensor);
+    return Security.status;
 }
 
-SecuritySensor *SecuritySensorGet(const SecurityController *ctrl, const char *name)
+void SecuritySensorAdd(const SecuritySensor *sensor)
 {
-    for (GList *c = ctrl->sensors; c != NULL; c = c->next) {
+    Security.sensors = g_list_append(Security.sensors, (void *)sensor);
+}
+
+SecuritySensor *SecuritySensorGet(const char *name)
+{
+    for (GList *c = Security.sensors; c != NULL; c = c->next) {
         SecuritySensor *sensor = (SecuritySensor *)c->data;
         if (!strcmp(sensor->name, name)) {
             return sensor;
@@ -367,12 +441,12 @@ SecuritySensor *SecuritySensorGet(const SecurityController *ctrl, const char *na
     return NULL;
 }
 
-GList **SecuritySensorsGet(SecurityController *ctrl)
+GList **SecuritySensorsGet()
 {
-    return &ctrl->sensors;
+    return &Security.sensors;
 }
 
-void SecurityKeyAdd(SecurityController *ctrl, const SecurityKey *key)
+void SecurityKeyAdd(const SecurityKey *key)
 {
-    ctrl->keys = g_list_append(ctrl->keys, (void *)key);
+    Security.keys = g_list_append(Security.keys, (void *)key);
 }

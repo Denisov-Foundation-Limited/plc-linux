@@ -96,7 +96,7 @@ bool DatabaseUpdate(Database *db, const char *table, const char *sql, const char
     return DatabaseExec(db, request);
 }
 
-bool DatabaseExists(Database *db, const char *table, const char *sql, bool *exists)
+bool DatabaseRowExists(Database *db, const char *table, const char *sql, bool *exists)
 {
     int             ret;
     sqlite3_stmt    *stmt;

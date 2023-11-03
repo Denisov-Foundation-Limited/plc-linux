@@ -8,24 +8,29 @@
 /*                                                                   */
 /*********************************************************************/
 
-#include <glib-2.0/glib.h>
+#include <net/web/webclient.h>
+#include <utils/utils.h>
 
-#include <core/extenders.h>
+#include <curl/curl.h>
 
-#ifdef __arm__
-#include <wiringPi.h>
-#include <pcf8574.h>
-#include <mcp23017.h>
-#include <ads1115.h>
-#endif
+#include <string.h>
 
 /*********************************************************************/
 /*                                                                   */
-/*                         PRIVATE VARIABLES                         */
+/*                         PRIVATE FUNCTIONS                         */
 /*                                                                   */
 /*********************************************************************/
 
-static GList *exts = NULL;
+static size_t WebOutputWrite(char *ptr, size_t size, size_t nmemb, void *data)
+{
+    if (nmemb > BUFFER_LEN_MAX) {
+        return 0;
+    }
+
+    strncpy((char *)data, ptr, nmemb);
+
+    return size * nmemb;
+}
 
 /*********************************************************************/
 /*                                                                   */
@@ -33,29 +38,33 @@ static GList *exts = NULL;
 /*                                                                   */
 /*********************************************************************/
 
-bool ExtenderAdd(const Extender *ext, char *err)
+bool WebClientRequest(WebRequestType type, const char *url, const char *post, char *out)
 {
-#ifdef __arm__
-    switch (ext->type) {
-        case EXT_TYPE_PCF_8574:
-            if (pcf8574Setup(ext->base, ext->addr) < 0) {
-                return false;
-            }
-            break;
+    CURL    *curl_handle;
+    int     ret;
 
-        case EXT_TYPE_MCP_23017:
-            if (mcp23017Setup(ext->base, ext->addr) < 0) {
-                return false;
-            }
-            break;
-
-        case EXT_TYPE_ADS_1115:
-            if (ads1115Setup(ext->base, ext->addr) < 0) {
-                return false;
-            }
-            break;
+    curl_handle = curl_easy_init();
+    if (!curl_handle) {
+        return false;
     }
-#endif
-    exts = g_list_append(exts, (void *)ext);
+
+    curl_easy_setopt(curl_handle, CURLOPT_URL, url);
+    if (type == WEB_REQ_POST) {
+        if (post == NULL) {
+            curl_easy_cleanup(curl_handle);
+            return false;
+        }
+        curl_easy_setopt(curl_handle, CURLOPT_POSTFIELDS, post);
+    }
+
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, &WebOutputWrite);
+    curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, out);
+    ret = curl_easy_perform(curl_handle);
+    curl_easy_cleanup(curl_handle);
+
+    if (ret != CURLE_OK) {
+        return false;
+    }
+
     return true;
 }

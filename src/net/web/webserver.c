@@ -16,9 +16,9 @@
 #include <fcgiapp.h>
 #include <utils/utils.h>
 #include <utils/log.h>
-#include <net/server.h>
+#include <net/web/webserver.h>
 
-#include <net/handlers/securityh.h>
+#include <net/web/handlers/securityh.h>
 
 /*********************************************************************/
 /*                                                                   */

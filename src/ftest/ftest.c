@@ -10,7 +10,7 @@
 
 #include <threads.h>
 
-#include <glib.h>
+#include <glib-2.0/glib.h>
 
 #include <ftest/ftest.h>
 #include <utils/log.h>
@@ -57,6 +57,10 @@ static int TestThread(void *data)
                 continue;
             }
 
+            if (!strcmp(pin->name, "none") || (pin->pin == 0)) {
+                continue;
+            }
+
             switch (pin->type) {
                 case GPIO_TYPE_DIGITAL:
                     if (GpioPinRead(pin)) {
@@ -84,6 +88,10 @@ static int TestThread(void *data)
             GpioPin *pin = (GpioPin *)p->data;
 
             if (pin->mode == GPIO_MODE_INPUT || pin->type == GPIO_TYPE_ANALOG) {
+                continue;
+            }
+
+            if (!strcmp(pin->name, "none") || (pin->pin == 0)) {
                 continue;
             }
 

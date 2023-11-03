@@ -13,7 +13,7 @@
 
 #include <stdbool.h>
 
-#include <glib.h>
+#include <glib-2.0/glib.h>
 #include <sqlite3.h>
 
 #include <utils/utils.h>
@@ -81,7 +81,7 @@ bool DatabaseCreate(Database *db, const char *table, const char *sql);
  *
  * @return True/false as result
  */
-bool DatabaseExists(Database *db, const char *table, const char *sql, bool *exists);
+bool DatabaseRowExists(Database *db, const char *table, const char *sql, bool *exists);
 
 /**
  * @brief Exec raw SQL request

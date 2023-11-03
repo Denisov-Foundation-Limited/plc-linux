@@ -87,7 +87,7 @@ bool OneWireTempRead(const char *id, float *temp)
     char    file_name[STR_LEN];
     FILE    *file;
 
-    snprintf(file_name, STR_LEN, "%s/%s-%s", ONE_WIRE_PATH, ONE_WIRE_DS18B20_PREFIX, id);
+    snprintf(file_name, STR_LEN, "%s/%s-%s/temperature", ONE_WIRE_PATH, ONE_WIRE_DS18B20_PREFIX, id);
 
     file = fopen(file_name, "r");
     if (file == NULL) {

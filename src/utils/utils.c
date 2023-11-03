@@ -9,6 +9,7 @@
 /*********************************************************************/
 
 #include <stdlib.h>
+#include <threads.h>
 
 #include <utils/utils.h>
 
@@ -46,4 +47,14 @@ bool UtilsURIParse(const char *url, GList **params)
     }
 
     return ret;
+}
+
+void UtilsSecSleep(unsigned sec)
+{
+    thrd_sleep(&(struct timespec){ .tv_sec = sec }, NULL);
+}
+
+void UtilsMsecSleep(unsigned msec)
+{
+    thrd_sleep(&(struct timespec){ .tv_nsec = msec * 1000000 }, NULL);
 }

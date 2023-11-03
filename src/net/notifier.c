@@ -11,10 +11,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include <curl/curl.h>
-
 #include <net/notifier.h>
 #include <utils/utils.h>
+#include <net/web/webclient.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -59,37 +58,21 @@ void NotifierSmsCredsSet(const char *api, const char *phone)
 bool NotifierTelegramSend(const char *msg)
 {
     char    url[EXT_STR_LEN];
-    CURL    *curl_handle;
+    char    buf[BUFFER_LEN_MAX];
 
     snprintf(url, EXT_STR_LEN, "https://api.telegram.org/bot%s/sendMessage?chat_id=%u&text=%s",
             Telegram.bot, Telegram.chat, msg);
-    
-    curl_handle = curl_easy_init();
-    if (curl_handle) {
-        curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-        curl_easy_perform(curl_handle);
-        curl_easy_cleanup(curl_handle);
-        return true;
-    }
 
-    return false;
+    return WebClientRequest(WEB_REQ_GET, url, NULL, buf);
 }
 
 bool NotifierSmsSend(const char *msg)
 {
     char    url[EXT_STR_LEN];
-    CURL    *curl_handle;
+    char    buf[BUFFER_LEN_MAX];
 
     snprintf(url, EXT_STR_LEN, "https://sms.ru/sms/send?api_id=%s&to=%s&text=%s&translit=1",
             Sms.api, Sms.phone, msg);
-    
-    curl_handle = curl_easy_init();
-    if (curl_handle) {
-        curl_easy_setopt(curl_handle, CURLOPT_URL, url);
-        curl_easy_perform(curl_handle);
-        curl_easy_cleanup(curl_handle);
-        return true;
-    }
 
-    return false;
+    return WebClientRequest(WEB_REQ_GET, url, NULL, buf);
 }

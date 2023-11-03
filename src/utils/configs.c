@@ -20,9 +20,14 @@
 #include <core/extenders.h>
 #include <core/lcd.h>
 #include <net/notifier.h>
-#include <net/server.h>
+#include <net/web/webserver.h>
+#include <net/tgbot/tgbot.h>
+#include <net/tgbot/tgmenu.h>
 #include <controllers/security.h>
 #include <db/database.h>
+#include <controllers/meteo.h>
+#include <stack/stack.h>
+#include <controllers/socket.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -198,10 +203,11 @@ static bool ControllersRead(const char *path)
 {
     char            full_path[STR_LEN];
     json_error_t    error;
-    size_t          index, ext_index;
-    json_t          *value, *ext_value;
+    size_t          ext_index;
+    json_t          *ext_value;
     char            err[ERROR_STR_LEN];
     Database        db;
+    GpioPin         *gpio = NULL;
 
     snprintf(full_path, STR_LEN, "%s%s", path, CONFIGS_CONTROLLERS_FILE);
 
@@ -211,108 +217,188 @@ static bool ControllersRead(const char *path)
     }
 
     /**
-     * Reading Extenders configs
+     * Reading Security configs
      */
 
-    json_array_foreach(json_object_get(data, "security"), index, value) {
-        SecurityController *ctrl = (SecurityController *)malloc(sizeof(SecurityController));
+    json_t *jsecurity = json_object_get(data, "security");
+    
+    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Security controller");
 
-        ctrl->last_alarm = false;
-        ctrl->alarm = false;
-        ctrl->status = false;
-        ctrl->sensors = NULL;
-        ctrl->keys = NULL;
+    /**
+     * Add security GPIOs
+     */
 
-        strncpy(ctrl->name, json_string_value(json_object_get(value, "name")), SHORT_STR_LEN);
-        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Security controller: \"%s\"", ctrl->name);
+    json_t *jgpio = json_object_get(jsecurity, "gpio");
+    gpio = GpioPinGet(json_string_value(json_object_get(jgpio, "status")));
+    if (gpio == NULL) {
+        json_decref(data);
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Status LED GPIO \"%s\" not found", json_string_value(json_object_get(jgpio, "status")));
+        return false;
+    }
+    SecurityGpioSet(SECURITY_GPIO_STATUS_LED, gpio);
 
-        /**
-         * Add security GPIOs
-         */
+    gpio = GpioPinGet(json_string_value(json_object_get(jgpio, "buzzer")));
+    if (gpio == NULL) {
+        json_decref(data);
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Buzzer GPIO \"%s\" not found", json_string_value(json_object_get(jgpio, "buzzer")));
+        return false;
+    }
+    SecurityGpioSet(SECURITY_GPIO_BUZZER, gpio);
+    
+    json_t *jalarm = json_object_get(jgpio, "alarm");
+    gpio = GpioPinGet(json_string_value(json_object_get(jalarm, "led")));
+    if (gpio == NULL) {
+        json_decref(data);
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Alarm LED GPIO \"%s\" not found", json_string_value(json_object_get(jalarm, "led")));
+        return false;
+    }
+    SecurityGpioSet(SECURITY_GPIO_ALARM_LED, gpio);
 
-        json_t *jgpio = json_object_get(value, "gpio");
-        ctrl->gpio[SECURITY_GPIO_STATUS_LED] = GpioPinGet(json_string_value(json_object_get(jgpio, "status")));
-        if (ctrl->gpio[SECURITY_GPIO_STATUS_LED] == NULL) {
+    gpio = GpioPinGet(json_string_value(json_object_get(jalarm, "relay")));
+    if (gpio == NULL) {
+        json_decref(data);
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Alarm Relay GPIO \"%s\" not found",
+            json_string_value(json_object_get(jalarm, "relay")));
+        return false;
+    }
+    SecurityGpioSet(SECURITY_GPIO_ALARM_RELAY, gpio);
+
+    /**
+     * Add security sensors
+     */
+
+    json_array_foreach(json_object_get(jsecurity, "sensors"), ext_index, ext_value) {
+        SecuritySensor *sensor = (SecuritySensor *)malloc(sizeof(SecuritySensor));
+
+        strncpy(sensor->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
+
+        sensor->gpio = GpioPinGet(json_string_value(json_object_get(ext_value, "gpio")));
+        if (sensor->gpio == NULL) {
             json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller \"%s\" error: Status LED GPIO \"%s\" not found", ctrl->name, json_string_value(json_object_get(jgpio, "status")));
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Security sensor \"%s\" error: GPIO \"%s\" not found",
+                sensor->name, json_string_value(json_object_get(ext_value, "gpio")));
             return false;
         }
-        ctrl->gpio[SECURITY_GPIO_BUZZER] = GpioPinGet(json_string_value(json_object_get(jgpio, "buzzer")));
-        if (ctrl->gpio[SECURITY_GPIO_BUZZER] == NULL) {
+
+        const char *type_str = json_string_value(json_object_get(ext_value, "type"));
+        if (!strcmp(type_str, "reed")) {
+            sensor->type = SECURITY_SENSOR_REED;
+        } else if (!strcmp(type_str, "pir")) {
+            sensor->type = SECURITY_SENSOR_PIR;
+        } else if (!strcmp(type_str, "microwave")) {
+            sensor->type = SECURITY_SENSOR_MICRO_WAVE;
+        } else {
             json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller \"%s\" error: Buzzer GPIO \"%s\" not found", ctrl->name, json_string_value(json_object_get(jgpio, "buzzer")));
-            return false;
-        }
-        
-        json_t *jalarm = json_object_get(jgpio, "alarm");
-        ctrl->gpio[SECURITY_GPIO_ALARM_LED] = GpioPinGet(json_string_value(json_object_get(jalarm, "led")));
-        if (ctrl->gpio[SECURITY_GPIO_ALARM_LED] == NULL) {
-            json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller \"%s\" error: Alarm LED GPIO \"%s\" not found", ctrl->name, json_string_value(json_object_get(jalarm, "led")));
-            return false;
-        }
-        ctrl->gpio[SECURITY_GPIO_ALARM_RELAY] = GpioPinGet(json_string_value(json_object_get(jalarm, "relay")));
-        if (ctrl->gpio[SECURITY_GPIO_ALARM_RELAY] == NULL) {
-            json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller \"%s\" error: Alarm Relay GPIO \"%s\" not found",
-                ctrl->name, json_string_value(json_object_get(jalarm, "relay")));
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown Security sensor \"%s\" type: \"%s\"", sensor->name, type_str);
             return false;
         }
 
-        /**
-         * Add security sensors
-         */
+        sensor->telegram = json_boolean_value(json_object_get(ext_value, "telegram"));
+        sensor->sms = json_boolean_value(json_object_get(ext_value, "sms"));
+        sensor->alarm = json_boolean_value(json_object_get(ext_value, "alarm"));
+        sensor->detected = false;
+        sensor->counter = 0;
 
-        json_array_foreach(json_object_get(value, "sensors"), ext_index, ext_value) {
-            SecuritySensor *sensor = (SecuritySensor *)malloc(sizeof(SecuritySensor));
+        SecuritySensorAdd(sensor);
 
-            strncpy(sensor->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Security sensor name: \"%s\" gpio: \"%s\" type: \"%s\" telegram: \"%d\" sms: \"%d\" alarm: \"%d\"",
+            sensor->name, json_string_value(json_object_get(ext_value, "gpio")),
+            type_str, sensor->telegram, sensor->sms, sensor->alarm);
+    }
 
-            sensor->gpio = GpioPinGet(json_string_value(json_object_get(ext_value, "gpio")));
-            if (sensor->gpio == NULL) {
-                json_decref(data);
-                LogF(LOG_TYPE_ERROR, "CONFIGS", "Security sensor \"%s\" error: GPIO \"%s\" not found",
-                    sensor->name, json_string_value(json_object_get(ext_value, "gpio")));
-                return false;
-            }
+    /**
+     * Add security keys
+     */
 
-            const char *type_str = json_string_value(json_object_get(ext_value, "type"));
-            if (!strcmp(type_str, "reed")) {
-                sensor->type = SECURITY_SENSOR_REED;
-            } else if (!strcmp(type_str, "pir")) {
-                sensor->type = SECURITY_SENSOR_PIR;
-            } else if (!strcmp(type_str, "microwave")) {
-                sensor->type = SECURITY_SENSOR_MICRO_WAVE;
-            } else {
-                json_decref(data);
-                LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown Security sensor \"%s\" type: \"%s\"", sensor->name, type_str);
-                return false;
-            }
+    json_array_foreach(json_object_get(jsecurity, "keys"), ext_index, ext_value) {
+        SecurityKey *key = (SecurityKey *)malloc(sizeof(SecurityKey));
 
-            sensor->telegram = json_boolean_value(json_object_get(ext_value, "telegram"));
-            sensor->sms = json_boolean_value(json_object_get(ext_value, "sms"));
-            sensor->alarm = json_boolean_value(json_object_get(ext_value, "alarm"));
-            sensor->detected = false;
+        strncpy(key->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
+        strncpy(key->id, json_string_value(json_object_get(ext_value, "id")), SHORT_STR_LEN);
 
-            SecuritySensorAdd(ctrl, sensor);
+        SecurityKeyAdd(key);
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add security key: \"%s\"", key->name);
+    }
 
-            LogF(LOG_TYPE_INFO, "CONFIGS", "Add Security sensor name: \"%s\" gpio: \"%s\" type: \"%s\" telegram: \"%d\" sms: \"%d\" alarm: \"%d\"",
-                sensor->name, json_string_value(json_object_get(ext_value, "gpio")),
-                type_str, sensor->telegram, sensor->sms, sensor->alarm);
+    /**
+     * Add Security scenario
+     */
+
+    json_array_foreach(json_object_get(jsecurity, "scenario"), ext_index, ext_value) {
+        SecurityScenario *scenario = (SecurityScenario *)malloc(sizeof(SecurityScenario));
+
+        if (!strcmp(json_string_value(json_object_get(ext_value, "type")), "in")) {
+            scenario->type = SECURITY_SCENARIO_IN;
+        } else {
+            scenario->type = SECURITY_SCENARIO_OUT;
         }
 
-        /**
-         * Add security keys
-         */
-
-        json_array_foreach(json_object_get(value, "keys"), ext_index, ext_value) {
-            SecurityKey *key = (SecurityKey *)malloc(sizeof(SecurityKey));
-            strncpy(key->value, json_string_value(ext_value), SHORT_STR_LEN);
-            SecurityKeyAdd(ctrl, key);
-            LogF(LOG_TYPE_INFO, "CONFIGS", "Add security key: \"%s\"", key->value);
+        if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "socket")) {
+            json_t *jsocket = json_object_get(ext_value, "socket");
+            strncpy(scenario->socket.name, json_string_value(json_object_get(jsocket, "name")), SHORT_STR_LEN);
+            scenario->socket.status = json_boolean_value(json_object_get(jsocket, "status"));
+            scenario->ctrl = SECURITY_CTRL_SOCKET;
         }
 
-        SecurityControllerAdd(ctrl);
+        SecurityScenarioAdd(scenario);
+    }
+
+    /**
+     * Reading Meteo configs
+     */
+
+    json_t *jmeteo = json_object_get(data, "meteo");
+    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Meteo controller");
+
+    json_array_foreach(json_object_get(jmeteo, "sensors"), ext_index, ext_value) {
+        MeteoSensor *sensor = (MeteoSensor *)malloc(sizeof(MeteoSensor));
+
+        strncpy(sensor->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
+        strncpy(sensor->id, json_string_value(json_object_get(ext_value, "id")), SHORT_STR_LEN);
+        sensor->error = false;
+
+        if (!strcmp(json_string_value(json_object_get(ext_value, "type")), "ds18b20")) {
+            sensor->type = METEO_SENSOR_DS18B20;
+        }
+
+        MeteoSensorAdd(sensor);
+
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Meteo sensor name: \"%s\" type: \"%s\" id: \"%s\"",
+            sensor->name, json_string_value(json_object_get(ext_value, "type")), sensor->id);
+    }
+
+    /**
+     * Reading Socket configs
+     */
+
+    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Socket controller");
+
+    json_array_foreach(json_object_get(data, "socket"), ext_index, ext_value) {
+        json_t *jgpio = json_object_get(ext_value, "gpio");
+
+        GpioPin *button = GpioPinGet(json_string_value(json_object_get(jgpio, "button")));
+        if (button == NULL) {
+            json_decref(data);
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Socket button gpio not found");
+            return false;
+        }
+
+        GpioPin *relay = GpioPinGet(json_string_value(json_object_get(jgpio, "relay")));
+        if (relay == NULL) {
+            json_decref(data);
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Socket relay gpio not found");
+            return false;
+        }
+
+         Socket *socket = SocketNew(
+            json_string_value(json_object_get(ext_value, "name")),
+            button,
+            relay
+        );
+
+        SocketAdd(socket);
+
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Socket name: \"%s\"", socket->name);
     }
 
     json_decref(data);
@@ -324,6 +410,8 @@ static bool PlcRead(const char *path)
     char            full_path[STR_LEN];
     json_error_t    error;
     char            err[ERROR_STR_LEN];
+    size_t          index;
+    json_t          *value;
 
     snprintf(full_path, STR_LEN, "%s%s", path, CONFIGS_PLC_FILE);
 
@@ -352,6 +440,40 @@ static bool PlcRead(const char *path)
     NotifierSmsCredsSet(api, phone);
     LogF(LOG_TYPE_INFO, "CONFIGS", "Add SMS Notifier token: \"%s\" phone: \"%s\"", api, phone);
 
+    json_t *tgbot = json_object_get(data, "tgbot");
+    TgBotTokenSet(json_string_value(json_object_get(tgbot, "token")));
+    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Telegram bot token: \"%s\"", json_string_value(json_object_get(tgbot, "token")));
+    json_array_foreach(json_object_get(tgbot, "users"), index, value) {
+        TgBotUser *user = (TgBotUser *)malloc(sizeof(TgBotUser));
+        TgMenu *menu = (TgMenu *)malloc(sizeof(TgMenu));
+
+        strncpy(user->name, json_string_value(json_object_get(value, "name")), STR_LEN);
+        user->chat_id = json_integer_value(json_object_get(value, "id"));
+        menu->from = user->chat_id;
+        menu->level = TG_MENU_LVL_STACK_SELECT;
+
+        TgBotUserAdd(user);
+        TgMenuAdd(menu);
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Telegram bot user: \"%s\"", user->name);
+    }
+
+    /**
+     * Stack configs
+     */
+
+    json_t *jstack = json_object_get(data, "stack");
+    json_array_foreach(json_object_get(jstack, "units"), index, value) {
+        StackUnit *unit = StackUnitNew(
+            json_integer_value(json_object_get(value, "id")),
+            json_string_value(json_object_get(value, "name")),
+            json_string_value(json_object_get(value, "ip")),
+            json_integer_value(json_object_get(value, "port"))
+        );
+        StackUnitAdd(unit);
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Stack unit: \"%s\"",
+            json_string_value(json_object_get(value, "name")));
+    }
+
     json_decref(data);
     return true;
 }
@@ -367,7 +489,7 @@ bool ConfigsRead(const char *path)
     ConfigsFactory factory;
 
     if (!FactoryRead(path, &factory)) {
-        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load ConfigsFactory configs");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load Factory configs");
         return false;
     }
 

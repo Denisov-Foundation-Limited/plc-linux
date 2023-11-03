@@ -8,22 +8,24 @@
 /*                                                                   */
 /*********************************************************************/
 
-#ifndef __SECURITY_HANDLER_H__
-#define __SECURITY_HANDLER_H__
+#ifndef __TELEGRAM_BOT_H__
+#define __TELEGRAM_BOT_H__
 
 #include <stdbool.h>
 
-#include <fcgiapp.h>
-#include <glib.h>
+#include <utils/utils.h>
 
-/**
- * @brief Manage security controllers
- *
- * @param req FastCGI request
- * @param params Request URI params
- *
- * @return true/false as result of processing request
- */
-bool HandlerSecurity(FCGX_Request *req, GList **params);
+#define TG_BOT_GET_UPDATES_URL  ""
 
-#endif /* __SECURITY_HANDLER_H__ */
+typedef struct {
+    char        name[STR_LEN];
+    unsigned    chat_id;
+} TgBotUser;
+
+void TgBotUserAdd(TgBotUser *user);
+
+void TgBotTokenSet(const char *bot_token);
+
+bool TgBotStart();
+
+#endif /* __TELEGRAM_BOT_H__ */

@@ -13,13 +13,14 @@
 
 #include <stdbool.h>
 
-#include <glib.h>
+#include <glib-2.0/glib.h>
 
 #define GPIO_NAME_STR_LEN   30
 #define ERROR_STR_LEN       255
 #define STR_LEN             255
 #define EXT_STR_LEN         1024
 #define SHORT_STR_LEN       50
+#define BUFFER_LEN_MAX      4096
 
 typedef struct {
     char    name[SHORT_STR_LEN];
@@ -35,5 +36,19 @@ typedef struct {
  * @return true/false as result of parsing
  */
 bool UtilsURIParse(const char *url, GList **params);
+
+/**
+ * @brief Wait thread some seconds
+ *
+ * @param sec Seconds
+ */
+void UtilsSecSleep(unsigned sec);
+
+/**
+ * @brief Wait thread some milliseconds
+ *
+ * @param msec Milliseconds
+ */
+void UtilsMsecSleep(unsigned msec);
 
 #endif /* __UTILS_H__ */

@@ -16,9 +16,11 @@
 #include <controllers/controllers.h>
 #include <ftest/ftest.h>
 #include <core/gpio.h>
-#include <net/server.h>
+#include <net/web/webserver.h>
+#include <net/tgbot/tgbot.h>
 #include <db/database.h>
 #include <db/dbloader.h>
+#include <stack/stack.h>
 
 int main(const int argc, const char **argv)
 {
@@ -84,6 +86,20 @@ int main(const int argc, const char **argv)
 
     if (!ControllersStart()) {
         Log(LOG_TYPE_ERROR, "MAIN", "Failed to start controllers");
+        return -1;
+    }
+
+    Log(LOG_TYPE_INFO, "MAIN", "Starting Stack monitoring");
+
+    if (!StackStart()) {
+        Log(LOG_TYPE_ERROR, "MAIN", "Failed to start stack");
+        return -1;
+    }
+
+    Log(LOG_TYPE_INFO, "MAIN", "Starting Telegram bot");
+
+    if (!TgBotStart()) {
+        Log(LOG_TYPE_ERROR, "MAIN", "Failed to start Telegram bot");
         return -1;
     }
 

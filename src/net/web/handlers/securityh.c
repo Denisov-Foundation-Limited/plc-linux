@@ -10,12 +10,12 @@
 
 #include <stdio.h>
 
-#include <glib.h>
+#include <glib-2.0/glib.h>
 #include <jansson.h>
 #include <fcgiapp.h>
 
-#include <net/handlers/securityh.h>
-#include <net/response/response.h>
+#include <net/web/handlers/securityh.h>
+#include <net/web/response.h>
 #include <utils/utils.h>
 #include <utils/log.h>
 #include <controllers/security.h>
@@ -28,7 +28,7 @@
 
 static bool HandlerStatusSet(FCGX_Request *req, GList **params)
 {
-    bool    status = false;
+    /*bool    status = false;
     char    ctrl_name[SHORT_STR_LEN] = {0};
     json_t  *root = json_object();
     char    error[STR_LEN];
@@ -50,16 +50,17 @@ static bool HandlerStatusSet(FCGX_Request *req, GList **params)
        ResponseFailSendF(req, "SECURITYH", "Security controller \"%s\" not found", ctrl_name);
     }
 
-    if (!SecurityStatusSet(ctrl, status, true)) {
+    if (!SecurityStatusSet(status, true)) {
        ResponseFailSendF(req, "SECURITYH", "Security controller \"%s\" failed to switch status to \"%d\"", ctrl_name, status);
     }
 
-    return ResponseOkSend(req, root);
+    return ResponseOkSend(req, root);*/
+    return true;
 }
 
 static bool HandlerStatusGet(FCGX_Request *req, GList **params)
 {
-    char    status[SHORT_STR_LEN];
+    /*char    status[SHORT_STR_LEN];
     char    ctrl_name[SHORT_STR_LEN] = {0};
     char    error[STR_LEN];
     json_t  *root = json_object();
@@ -79,7 +80,8 @@ static bool HandlerStatusGet(FCGX_Request *req, GList **params)
 
     json_object_set_new(root, "status", json_boolean(SecurityStatusGet(ctrl)));
 
-    return ResponseOkSend(req, root);
+    return ResponseOkSend(req, root);*/
+    return true;
 }
 
 /*********************************************************************/

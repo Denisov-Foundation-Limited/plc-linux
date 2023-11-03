@@ -96,7 +96,7 @@ bool GpioPinRead(const GpioPin *pin)
         return 0;
     }
 #ifdef __arm__
-    return digitalRead(pin->pin);
+    return (bool)digitalRead(pin->pin);
 #endif
     return true;
 }
