@@ -343,6 +343,11 @@ static bool ControllersRead(const char *path)
         SecurityScenarioAdd(scenario);
     }
 
+    json_t *jsound = json_object_get(jsecurity, "sound");
+    SecuritySoundSet(SECURITY_SOUND_ENTER, json_boolean_value(json_object_get(jsound, "enter")));
+    SecuritySoundSet(SECURITY_SOUND_EXIT, json_boolean_value(json_object_get(jsound, "exit")));
+    SecuritySoundSet(SECURITY_SOUND_ALARM, json_boolean_value(json_object_get(jsound, "alarm")));
+
     /**
      * Reading Meteo configs
      */
@@ -351,20 +356,23 @@ static bool ControllersRead(const char *path)
     LogF(LOG_TYPE_INFO, "CONFIGS", "Add Meteo controller");
 
     json_array_foreach(json_object_get(jmeteo, "sensors"), ext_index, ext_value) {
-        MeteoSensor *sensor = (MeteoSensor *)malloc(sizeof(MeteoSensor));
-
-        strncpy(sensor->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
-        strncpy(sensor->id, json_string_value(json_object_get(ext_value, "id")), SHORT_STR_LEN);
-        sensor->error = false;
+        MeteoSensor *sensor;
 
         if (!strcmp(json_string_value(json_object_get(ext_value, "type")), "ds18b20")) {
-            sensor->type = METEO_SENSOR_DS18B20;
+            sensor = MeteoSensorNew(
+                json_string_value(json_object_get(ext_value, "name")),
+                METEO_SENSOR_DS18B20
+            );
+            strncpy(sensor->ds18b20.id, json_string_value(json_object_get(ext_value, "id")), SHORT_STR_LEN);
+        } else {
+            Log(LOG_TYPE_INFO, "CONFIGS", "Invalid meteo sensor type");
+            return false;
         }
 
         MeteoSensorAdd(sensor);
 
-        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Meteo sensor name: \"%s\" type: \"%s\" id: \"%s\"",
-            sensor->name, json_string_value(json_object_get(ext_value, "type")), sensor->id);
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Meteo sensor name: \"%s\" type: \"%s\"",
+            sensor->name, json_string_value(json_object_get(ext_value, "type")));
     }
 
     /**
@@ -442,19 +450,24 @@ static bool PlcRead(const char *path)
 
     json_t *tgbot = json_object_get(data, "tgbot");
     TgBotTokenSet(json_string_value(json_object_get(tgbot, "token")));
-    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Telegram bot token: \"%s\"", json_string_value(json_object_get(tgbot, "token")));
-    json_array_foreach(json_object_get(tgbot, "users"), index, value) {
-        TgBotUser *user = (TgBotUser *)malloc(sizeof(TgBotUser));
-        TgMenu *menu = (TgMenu *)malloc(sizeof(TgMenu));
+    if (json_boolean_value(json_object_get(tgbot, "enabled"))) {
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Telegram bot token: \"%s\"", json_string_value(json_object_get(tgbot, "token")));
+        json_array_foreach(json_object_get(tgbot, "users"), index, value) {
+            TgBotUser *user = (TgBotUser *)malloc(sizeof(TgBotUser));
+            TgMenu *menu = (TgMenu *)malloc(sizeof(TgMenu));
 
-        strncpy(user->name, json_string_value(json_object_get(value, "name")), STR_LEN);
-        user->chat_id = json_integer_value(json_object_get(value, "id"));
-        menu->from = user->chat_id;
-        menu->level = TG_MENU_LVL_STACK_SELECT;
+            strncpy(user->name, json_string_value(json_object_get(value, "name")), STR_LEN);
+            user->chat_id = json_integer_value(json_object_get(value, "id"));
+            menu->from = user->chat_id;
+            menu->level = TG_MENU_LVL_STACK_SELECT;
 
-        TgBotUserAdd(user);
-        TgMenuAdd(menu);
-        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Telegram bot user: \"%s\"", user->name);
+            TgBotUserAdd(user);
+            TgMenuAdd(menu);
+            LogF(LOG_TYPE_INFO, "CONFIGS", "Add Telegram bot user: \"%s\"", user->name);
+        }
+    } else {
+        TgBotDisable();
+        Log(LOG_TYPE_INFO, "CONFIGS", "Telegram bot disabled");
     }
 
     /**
@@ -470,8 +483,7 @@ static bool PlcRead(const char *path)
             json_integer_value(json_object_get(value, "port"))
         );
         StackUnitAdd(unit);
-        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Stack unit: \"%s\"",
-            json_string_value(json_object_get(value, "name")));
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Stack unit: \"%s\"", unit->name);
     }
 
     json_decref(data);

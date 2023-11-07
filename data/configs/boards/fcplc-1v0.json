@@ -11,6 +11,7 @@
     ],
 
     "gpio": [
+        { "name": "none",         "pin": 0,   "type": "digital", "mode": "input",  "pull": "none" },
         { "name": "cpu-btn-up",   "pin": 8,   "type": "digital", "mode": "input",  "pull": "down" },
         { "name": "cpu-btn-red",  "pin": 7,   "type": "digital", "mode": "input",  "pull": "down" },
         { "name": "cpu-btn-dn",   "pin": 5,   "type": "digital", "mode": "input",  "pull": "down" },
@@ -31,8 +32,7 @@
         { "name": "ext-opto-5",   "pin": 704, "type": "digital", "mode": "input",  "pull": "down" },
         { "name": "ext-opto-6",   "pin": 705, "type": "digital", "mode": "input",  "pull": "down" },
         { "name": "ext-opto-7",   "pin": 706, "type": "digital", "mode": "input",  "pull": "down" },
-        { "name": "ext-opto-8",   "pin": 707, "type": "digital", "mode": "input",  "pull": "down" },
-        { "name": "none",         "pin": 0,   "type": "digital", "mode": "input",  "pull": "down" }
+        { "name": "ext-opto-8",   "pin": 707, "type": "digital", "mode": "input",  "pull": "down" }
     ],
 
     "lcd": [

@@ -10,6 +10,7 @@
 
 #include <stack/stack.h>
 #include <utils/log.h>
+#include <stack/rpc.h>
 
 #include <threads.h>
 #include <stdlib.h>
@@ -32,10 +33,135 @@ static struct {
 /*                                                                   */
 /*********************************************************************/
 
+static void UnitsStatusCheck()
+{
+    for (GList *u = *StackUnitsGet(); u != NULL; u = u->next) {
+        StackUnit *unit = (StackUnit *)u->data;
+
+        if (RpcUnitStatusCheck(unit->id)) {
+            if (!unit->active) {
+                unit->active = true;
+                LogF(LOG_TYPE_INFO, "STACK", "Unit \"%s\" is online", unit->name);
+            }
+        } else {
+            if (unit->active) {
+                unit->active = false;
+                LogF(LOG_TYPE_INFO, "STACK", "Unit \"%s\" is offline", unit->name);
+            }
+        }
+    }
+}
+
+static void SecurityControllersUpdate()
+{
+    GList   *units = NULL;
+    bool    master_status = false;
+    bool    master_alarm = false;
+    bool    slave_status = false;
+    bool    slave_alarm = false;
+
+    if (!RpcSecurityStatusGet(RPC_DEFAULT_UNIT, &master_status)) {
+        LogF(LOG_TYPE_ERROR, "STACK", "Failed to get Security status from Unit %d", 0);
+        return;
+    }
+
+    if (!RpcSecurityAlarmGet(RPC_DEFAULT_UNIT, &master_alarm)) {
+        LogF(LOG_TYPE_ERROR, "STACK", "Failed to get Security alarm from Unit %d", 0);
+        return;
+    }
+
+    StackActiveUnitsGet(&units);
+
+    for (GList *u = units; u != NULL; u = u->next) {
+        StackUnit *unit = (StackUnit *)u->data;
+
+        if (unit->id == RPC_DEFAULT_UNIT) {
+            continue;
+        }
+
+        if (!RpcSecurityStatusGet(unit->id, &slave_status)) {
+            if (!unit->error) {
+                unit->error = true;
+                LogF(LOG_TYPE_ERROR, "STACK", "Failed to get Security status from Unit %d", unit->id);
+                continue;
+            }
+        } else {
+            if (unit->error) {
+                unit->error = false;
+                LogF(LOG_TYPE_INFO, "STACK", "Successfully get Security status from Unit %d", unit->id);
+            }
+        }
+
+        if (slave_status != master_status) {
+            if (!RpcSecurityStatusSet(unit->id, master_status)) {
+                if (!unit->error) {
+                    unit->error = true;
+                    LogF(LOG_TYPE_ERROR, "STACK", "Failed to set Security status from Unit %d", unit->id);
+                    continue;
+                }
+            } else {
+                if (unit->error) {
+                    unit->error = false;
+                    LogF(LOG_TYPE_INFO, "STACK", "Successfully set Security status from Unit %d", unit->id);
+                }
+            }
+        }
+
+        if (!RpcSecurityAlarmGet(unit->id, &slave_alarm)) {
+            if (!unit->error) {
+                unit->error = true;
+                LogF(LOG_TYPE_ERROR, "STACK", "Failed to get Security alarm from Unit %d", unit->id);
+                continue;
+            }
+        } else {
+            if (unit->error) {
+                unit->error = false;
+                LogF(LOG_TYPE_INFO, "STACK", "Successfully get Security alarm from Unit %d", unit->id);
+            }
+        }
+
+        if (slave_alarm && !master_alarm) {
+            if (!RpcSecurityAlarmSet(RPC_DEFAULT_UNIT, true)) {
+                if (!unit->error) {
+                    unit->error = true;
+                    LogF(LOG_TYPE_ERROR, "STACK", "Failed to set Security alarm to Unit %d", RPC_DEFAULT_UNIT);
+                    continue;
+                }
+            } else {
+                master_alarm = true;
+                if (unit->error) {
+                    unit->error = false;
+                    LogF(LOG_TYPE_INFO, "STACK", "Successfully set Security alarm to Unit %d", RPC_DEFAULT_UNIT);
+                }
+            }
+        }
+
+        if (!slave_alarm && master_alarm) {
+            if (!RpcSecurityAlarmSet(unit->id, true)) {
+                if (!unit->error) {
+                    unit->error = true;
+                    LogF(LOG_TYPE_ERROR, "STACK", "Failed to set Security alarm to Unit %d", unit->id);
+                    continue;
+                }
+            } else {
+                if (unit->error) {
+                    unit->error = false;
+                    LogF(LOG_TYPE_INFO, "STACK", "Successfully set Security alarm to Unit %d", unit->id);
+                }
+            }
+        }
+    }
+
+    g_list_free(units);
+    units = NULL;
+}
+
 static int StackThread(void *data)
 {
     for (;;) {
-        UtilsSecSleep(5);
+        UnitsStatusCheck();
+        SecurityControllersUpdate();
+        UtilsSecSleep(3);
     }
 }
 
@@ -61,15 +187,24 @@ StackUnit *StackUnitNew(unsigned id, const char *name, const char *ip, unsigned 
     StackUnit *unit = (StackUnit *)malloc(sizeof(StackUnit));
 
     unit->id = id;
+    unit->error = false;
     strncpy(unit->name, name, SHORT_STR_LEN);
     strncpy(unit->ip, ip, SHORT_STR_LEN);
-    if (id == 0) {
-        unit->active = true;
-    } else {
-        unit->active = false;
-    }
+    unit->active = false;
+    unit->port = port;
 
     return unit;
+}
+
+StackUnit *StackUnitNameGet(const char *name)
+{
+    for (GList *u = Stack.units; u != NULL; u = u->next) {
+        StackUnit *unit = (StackUnit *)u->data;
+        if (!strcmp(unit->name, name)) {
+            return unit;
+        }
+    }
+    return NULL;
 }
 
 StackUnit *StackUnitGet(unsigned id)

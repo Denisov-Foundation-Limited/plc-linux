@@ -70,8 +70,12 @@ void StackSelectMenuProcess(const char *token, unsigned from, const char *messag
 
 void MainMenuProcess(const char *token, unsigned from, const char *message)
 {
-    TgBotResponseSend(token, from, "<b>ГЛАВНОЕ МЕНЮ</b>\n\n",
-                        "[[\"Метео\"],[\"Охрана\"],[\"Розетки\"],[\"Назад\"]]");
+    char    text[EXT_STR_LEN];
+
+    StackUnit *unit = TgMenuUnitGet(from);
+
+    snprintf(text, EXT_STR_LEN, "<b>ГЛАВНОЕ МЕНЮ: %s</b>\n", unit->name);
+    TgBotResponseSend(token, from, text, "[[\"Метео\"],[\"Охрана\"],[\"Розетки\"],[\"Назад\"]]");
 }
 
 void SocketMenuProcess(const char *token, unsigned from, const char *message)
@@ -80,21 +84,27 @@ void SocketMenuProcess(const char *token, unsigned from, const char *message)
     char    sock_text[STR_LEN];
     char    buttons[EXT_STR_LEN];
     char    button[STR_LEN];
+    char    status_text[STR_LEN];
     GList   *sockets = NULL;
     bool    ret = false;
+    bool    status = false;
 
-    unsigned unit = TgMenuUnitGet(from);
+    StackUnit *unit = TgMenuUnitGet(from);
 
-    strncpy(text, "<b>РОЗЕТКИ</b>\n\n", EXT_STR_LEN);
+    snprintf(text, EXT_STR_LEN, "<b>РОЗЕТКИ: %s</b>\n\n", unit->name);
     strncpy(buttons, "[", EXT_STR_LEN);
 
     if (strcmp(message, "Розетки") && strcmp(message, "Назад") && strcmp(message, "Обновить")) {
-        if (!RpcSocketStatusSet(unit, message, !RpcSocketStatusGet(unit, message))) {
+        if (!RpcSocketStatusGet(unit->id, message, &status)) {
+            strcat(text, "<b>Ошибка получения статуса розетки</b>\n\n");
+        }
+
+        if (!RpcSocketStatusSet(unit->id, message, !status)) {
             strcat(text, "<b>Ошибка переключения розетки</b>\n\n");
         }
     }
 
-    ret = RpcSocketsGet(unit, &sockets);
+    ret = RpcSocketsGet(unit->id, &sockets);
 
     if (ret) {
         for (GList *s = sockets; s != NULL; s = s->next) {
@@ -103,12 +113,13 @@ void SocketMenuProcess(const char *token, unsigned from, const char *message)
             snprintf(button, STR_LEN, "[\"%s\"],", socket->name);
             strcat(buttons, button);
 
-            if (RpcSocketStatusGet(unit, socket->name)) {
-                snprintf(sock_text, STR_LEN, "        %s: <b>Включен</b>\n", socket->name);
+            if (socket->status) {
+                strncpy(status_text, "Включен", STR_LEN);
             } else {
-                snprintf(sock_text, STR_LEN, "        %s: <b>Отключен</b>\n", socket->name);
+                strncpy(status_text, "Отключен", STR_LEN);
             }
 
+            snprintf(sock_text, STR_LEN, "        %-20s: <b>%s</b>\n", socket->name, status_text);
             strcat(text, sock_text);
             free(socket);
         }
@@ -129,16 +140,22 @@ void MeteoMenuProcess(const char *token, unsigned from, const char *message)
     GList   *sensors = NULL;
     bool    ret = false;
 
-    unsigned unit = TgMenuUnitGet(from);
+    StackUnit *unit = TgMenuUnitGet(from);
 
-    strncpy(text, "<b>МЕТЕО</b>\n\n", EXT_STR_LEN);
+    snprintf(text, EXT_STR_LEN, "<b>МЕТЕО: %s</b>\n\n", unit->name);
 
-    ret = RpcMeteoSensorsGet(unit, &sensors);
+    ret = RpcMeteoSensorsGet(unit->id, &sensors);
 
     if (ret) {
         for (GList *s = sensors; s != NULL; s = s->next) {
             RpcMeteoSensor *sensor = (RpcMeteoSensor *)s->data;
-            snprintf(sensor_text, STR_LEN, "        %s: <b>%.1f°</b>\n", sensor->name, sensor->temp);
+
+            switch (sensor->type) {
+                case RPC_METEO_SENSOR_DS18B20:
+                    snprintf(sensor_text, STR_LEN, "        %-20s: <b>%.1f°</b>\n", sensor->name, sensor->ds18b20.temp);
+                    break;
+            }
+
             strcat(text, sensor_text);
             free(sensor);
         }
@@ -155,29 +172,30 @@ void SecurityMenuProcess(const char *token, unsigned from, const char *message)
     char    text[EXT_STR_LEN];
     char    status_text[STR_LEN];
     char    buttons[STR_LEN];
+    char    name_text[STR_LEN];
     char    siren_text[STR_LEN];
     bool    ret = false;
     bool    status = false;
     bool    alarm = false;
     GList   *sensors = NULL;
 
-    unsigned unit = TgMenuUnitGet(from);
+    StackUnit *unit = TgMenuUnitGet(from);
 
     if (!strcmp(message, "Включить")) {
-        if (!RpcSecurityStatusSet(unit, true)) {
+        if (!RpcSecurityStatusSet(unit->id, true)) {
             LogF(LOG_TYPE_ERROR, "TGHANDLERS", "Failed to enable security unit \"%d\" status", unit);
         }
     } else if (!strcmp(message, "Отключить")) {
-        if (!RpcSecurityStatusSet(unit, false)) {
+        if (!RpcSecurityStatusSet(unit->id, false)) {
             LogF(LOG_TYPE_ERROR, "TGHANDLERS", "Failed to disable security unit \"%d\" status", unit);
         }
     } else if (!strcmp(message, "Сирена")) {
-        if (!RpcSecurityAlarmSet(unit, true)) {
+        if (!RpcSecurityAlarmSet(unit->id, true)) {
             LogF(LOG_TYPE_ERROR, "TGHANDLERS", "Failed to disable alarm of security unit \"%d\" status", unit);
         }
     }
 
-    ret = RpcSecurityStatusGet(unit, &status);
+    ret = RpcSecurityStatusGet(unit->id, &status);
 
     if (ret) {
         if (status) {
@@ -192,7 +210,7 @@ void SecurityMenuProcess(const char *token, unsigned from, const char *message)
         strncpy(buttons, "[[\"Сирена\"], [\"Обновить\", \"Назад\"]]", STR_LEN);
     }
 
-    ret = RpcSecurityAlarmGet(unit, &alarm);
+    ret = RpcSecurityAlarmGet(unit->id, &alarm);
 
     if (ret) {
         if (alarm) {
@@ -204,18 +222,17 @@ void SecurityMenuProcess(const char *token, unsigned from, const char *message)
         strncpy(siren_text, "Ошибка", STR_LEN);
     }
 
-    snprintf(text, STR_LEN, "<b>ОХРАНА</b>\n\n        Статус: <b>%s</b>\n        Сирена: <b>%s</b>\n\n<b>Датчики:</b>\n\n",
-            status_text, siren_text);
+    snprintf(text, STR_LEN, "<b>ОХРАНА: %s</b>\n\n        %-20s: <b>%-20s</b>\n        %-20s: <b>%-20s</b>\n\n<b>Датчики:</b>\n\n",
+            unit->name, "Статус", status_text, "Сирена", siren_text);
 
-    ret = RpcSecuritySensorsGet(unit, &sensors);
+    ret = RpcSecuritySensorsGet(unit->id, &sensors);
 
     if (ret) {
         for (GList *c = sensors; c != NULL; c = c->next) {
             RpcSecuritySensor *sensor = (RpcSecuritySensor *)c->data;
 
-            strcat(text, "        ");
-            strcat(text, sensor->name);
-            strcat(text, ": <b>");
+            snprintf(name_text, STR_LEN, "        %-20s : <b>", sensor->name);
+            strcat(text, name_text);
 
             if (sensor->detected) {
                 if (sensor->type == RPC_SECURITY_SENSOR_REED) {

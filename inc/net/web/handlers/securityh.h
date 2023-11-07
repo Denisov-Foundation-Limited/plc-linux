@@ -17,13 +17,13 @@
 #include <glib-2.0/glib.h>
 
 /**
- * @brief Manage security controllers
+ * @brief Manage security controller
  *
  * @param req FastCGI request
  * @param params Request URI params
  *
  * @return true/false as result of processing request
  */
-bool HandlerSecurity(FCGX_Request *req, GList **params);
+bool HandlerSecurityProcess(FCGX_Request *req, GList **params);
 
 #endif /* __SECURITY_HANDLER_H__ */

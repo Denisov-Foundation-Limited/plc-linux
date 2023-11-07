@@ -8,26 +8,17 @@
 /*                                                                   */
 /*********************************************************************/
 
-#ifndef __WEB_SERVER_H__
-#define __WEB_SERVER_H__
+#include <net/web/response.h>
+#include <net/web/handlers/indexh.h>
 
-#include <stdbool.h>
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
 
-#define SERVER_API_VER  "v1"
-
-/**
- * @brief Set server credentials
- * 
- * @param host Server host
- * @param port Server port
- */
-void WebServerCredsSet(const char *host, unsigned port);
-
-/**
- * @brief Starting FastCGI web server
- * 
- * @return true/false as result of starting server
- */
-bool WebServerStart();
-
-#endif /* __WEB_SERVER_H__ */
+bool HandlerIndexProcess(FCGX_Request *req, GList **params)
+{
+    json_t  *root = json_object();
+    return ResponseOkSend(req, root);
+}

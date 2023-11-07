@@ -26,9 +26,16 @@
 /*                                                                   */
 /*********************************************************************/
 
-static char     token[STR_LEN] = {0};
-static GList    *users = NULL;
-static unsigned message_id = 0;
+static struct {
+    char        token[STR_LEN];
+    GList       *users;
+    unsigned    message_id;
+    bool        enabled;
+} TgBot = {
+    .users = NULL,
+    .message_id = 0,
+    .enabled = true
+};
 
 /*********************************************************************/
 /*                                                                   */
@@ -40,7 +47,7 @@ static void MessageProcess(unsigned from, const char *message)
 {
     bool found = false;
 
-    for (GList *u = users; u != NULL; u = u->next) {
+    for (GList *u = TgBot.users; u != NULL; u = u->next) {
         TgBotUser *user = (TgBotUser *)u->data;
         if (user->chat_id == from) {
             LogF(LOG_TYPE_INFO, "TGBOT", "User \"%s\" authorized with msg \"%s\"", user->name, message);
@@ -62,7 +69,7 @@ static void MessageProcess(unsigned from, const char *message)
         case TG_MENU_LVL_STACK_SELECT:
             if (strcmp(message, "Назад")) {
                 if (StackUnitNameCheck(message)) {
-                    TgMenuUnitSet(from, StackUnitIdGet(message));
+                    TgMenuUnitSet(from, StackUnitNameGet(message));
                     TgMenuLevelSet(from, TG_MENU_LVL_MAIN);
                 }
             }
@@ -81,23 +88,23 @@ static void MessageProcess(unsigned from, const char *message)
 
     switch (TgMenuLevelGet(from)) {
         case TG_MENU_LVL_STACK_SELECT:
-            StackSelectMenuProcess(token, from, message);
+            StackSelectMenuProcess(TgBot.token, from, message);
             break;
 
         case TG_MENU_LVL_MAIN:
-            MainMenuProcess(token, from, message);
+            MainMenuProcess(TgBot.token, from, message);
             break;
 
         case TG_MENU_LVL_SOCKET:
-            SocketMenuProcess(token, from, message);
+            SocketMenuProcess(TgBot.token, from, message);
             break;
 
         case TG_MENU_LVL_SECURITY:
-            SecurityMenuProcess(token, from, message);
+            SecurityMenuProcess(TgBot.token, from, message);
             break;
 
         case TG_MENU_LVL_METEO:
-            MeteoMenuProcess(token, from, message);
+            MeteoMenuProcess(TgBot.token, from, message);
             break;
     }
 }
@@ -112,7 +119,7 @@ static int TelegramThread(void *data)
 
     for (;;) {
         memset(buf, 0x0, BUFFER_LEN_MAX);
-        snprintf(url, STR_LEN, "https://api.telegram.org/bot%s/getUpdates?offset=-1", token);
+        snprintf(url, STR_LEN, "https://api.telegram.org/bot%s/getUpdates?offset=-1", TgBot.token);
 
         if (WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
             json_t *root = json_loads(buf, 0, &error);
@@ -127,8 +134,8 @@ static int TelegramThread(void *data)
                 json_t *from = json_object_get(message, "from");
                 int id = json_integer_value(json_object_get(message, "message_id"));
 
-                if (id != message_id) {
-                    message_id = id;
+                if (id != TgBot.message_id) {
+                    TgBot.message_id = id;
                     MessageProcess(json_integer_value(json_object_get(from, "id")),
                                     json_string_value(json_object_get(message, "text")));
                 }
@@ -149,19 +156,28 @@ static int TelegramThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
+void TgBotDisable()
+{
+    TgBot.enabled = false;
+}
+
 void TgBotUserAdd(TgBotUser *user)
 {
-    users = g_list_append(users, (void *)user);
+    TgBot.users = g_list_append(TgBot.users, (void *)user);
 }
 
 void TgBotTokenSet(const char *bot_token)
 {
-    strncpy(token, bot_token, STR_LEN);
+    strncpy(TgBot.token, bot_token, STR_LEN);
 }
 
 bool TgBotStart()
 {
     thrd_t  th;
+
+    if (!TgBot.enabled) {
+        return true;
+    }
 
     thrd_create(&th, &TelegramThread, NULL);
 

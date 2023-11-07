@@ -20,10 +20,31 @@
  */
 void MainMenuProcess(const char *token, unsigned from, const char *message);
 
+/**
+ * @brief Meteo menu of bot
+ * 
+ * @param token Telegram bot token
+ * @param from User's ID
+ * @param message input message
+ */
 void MeteoMenuProcess(const char *token, unsigned from, const char *message);
 
+/**
+ * @brief Stack menu of bot
+ * 
+ * @param token Telegram bot token
+ * @param from User's ID
+ * @param message input message
+ */
 void StackSelectMenuProcess(const char *token, unsigned from, const char *message);
 
+/**
+ * @brief Socket menu of bot
+ * 
+ * @param token Telegram bot token
+ * @param from User's ID
+ * @param message input message
+ */
 void SocketMenuProcess(const char *token, unsigned from, const char *message);
 
 /**

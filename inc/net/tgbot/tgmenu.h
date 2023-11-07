@@ -13,6 +13,8 @@
 
 #include <utils/utils.h>
 
+#include <stack/stack.h>
+
 typedef enum {
     TG_MENU_LVL_MAIN,
     TG_MENU_LVL_STACK_SELECT,
@@ -25,24 +27,73 @@ typedef enum {
 typedef struct {
     unsigned    from;
     TgMenuLevel level;
-    unsigned    unit;
+    StackUnit   *unit;
     char        data[STR_LEN];
 } TgMenu;
 
+/**
+ * @brief Add menu for user
+ * 
+ * @param menu New user's menu
+ */
 void TgMenuAdd(TgMenu *menu);
 
+/**
+ * @brief Get current menu level for user
+ * 
+ * @param from User ID
+ * 
+ * @return Current menu level
+ */
 TgMenuLevel TgMenuLevelGet(unsigned from);
 
-void TgMenuUnitSet(unsigned from, unsigned unit);
+/**
+ * @brief Set unit for uniq User menu
+ * 
+ * @param from User ID
+ * @param unit Stack Unit pointer
+ */
+void TgMenuUnitSet(unsigned from, StackUnit *unit);
 
-unsigned TgMenuUnitGet(unsigned from);
+/**
+ * @brief Get unit for uniq User menu
+ * 
+ * @param from User ID
+ * 
+ * @return Stack Unit pointer
+ */
+StackUnit *TgMenuUnitGet(unsigned from);
 
+/**
+ * @brief Set additional data for uniq user
+ * 
+ * @param from User ID
+ * @param data Additional data
+ */
 void TgMenuDataSet(unsigned from, const char *data);
 
+/**
+ * @brief Get additional data for uniq user
+ * 
+ * @param from User ID
+ * 
+ * @return Additional data
+ */
 const char *TgMenuDataGet(unsigned from);
 
+/**
+ * @brief Set new menu for user
+ * 
+ * @param from User ID
+ * @param level New user menu
+ */
 void TgMenuLevelSet(unsigned from, TgMenuLevel level);
 
+/**
+ * @brief Set previous menu for user
+ * 
+ * @param from User ID 
+ */
 void TgMenuBack(unsigned from);
 
 #endif /* __TG_MENU_H__ */

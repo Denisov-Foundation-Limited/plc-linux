@@ -75,7 +75,7 @@ TgMenuLevel TgMenuLevelGet(unsigned from)
     return TG_MENU_LVL_MAIN;
 }
 
-void TgMenuUnitSet(unsigned from, unsigned unit)
+void TgMenuUnitSet(unsigned from, StackUnit *unit)
 {
     for (GList *m = menus; m != NULL; m = m->next) {
         TgMenu *menu = (TgMenu *)m->data;
@@ -86,7 +86,7 @@ void TgMenuUnitSet(unsigned from, unsigned unit)
     }
 }
 
-unsigned TgMenuUnitGet(unsigned from)
+StackUnit *TgMenuUnitGet(unsigned from)
 {
     for (GList *m = menus; m != NULL; m = m->next) {
         TgMenu *menu = (TgMenu *)m->data;

@@ -15,12 +15,32 @@
 
 #include <utils/utils.h>
 
-#define RPC_SECURITY_SENSOR_REED    0
+/*********************************************************************/
+/*                                                                   */
+/*                           STACK MANAGMENT                         */
+/*                                                                   */
+/*********************************************************************/
+
+#define RPC_DEFAULT_UNIT    0
+
+bool RpcUnitStatusCheck(unsigned unit);
+
+/*********************************************************************/
+/*                                                                   */
+/*                         SECURITY FUNCTIONS                        */
+/*                                                                   */
+/*********************************************************************/
+
+typedef enum {
+    RPC_SECURITY_SENSOR_REED,
+    RPC_SECURITY_SENSOR_MICRO_WAVE,
+    RPC_SECURITY_SENSOR_PIR
+} RpcSecuritySensorType;
 
 typedef struct {
-    char        name[SHORT_STR_LEN];
-    unsigned    type;
-    bool        detected;
+    char                    name[SHORT_STR_LEN];
+    RpcSecuritySensorType   type;
+    bool                    detected;
 } RpcSecuritySensor;
 
 bool RpcSecurityStatusSet(unsigned unit, bool status);
@@ -29,14 +49,33 @@ bool RpcSecurityAlarmSet(unsigned unit, bool alarm);
 bool RpcSecurityAlarmGet(unsigned unit, bool *alarm);
 bool RpcSecuritySensorsGet(unsigned unit, GList **sensors);
 
+/*********************************************************************/
+/*                                                                   */
+/*                           METEO FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
+typedef enum {
+    RPC_METEO_SENSOR_DS18B20
+} RpcMeteoSensorType;
+
 typedef struct {
-    char    name[SHORT_STR_LEN];
     float   temp;
-    float   hum;
-    float   pres;
+} RpcMeteoDs18b20;
+
+typedef struct {
+    char                name[SHORT_STR_LEN];
+    RpcMeteoSensorType  type;
+    RpcMeteoDs18b20     ds18b20;
 } RpcMeteoSensor;
 
 bool RpcMeteoSensorsGet(unsigned unit, GList **sensors);
+
+/*********************************************************************/
+/*                                                                   */
+/*                         SOCKET  FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
 
 typedef struct {
     char    name[SHORT_STR_LEN];
@@ -44,7 +83,7 @@ typedef struct {
 } RpcSocket;
 
 bool RpcSocketStatusSet(unsigned unit, const char *name, bool status);
-bool RpcSocketStatusGet(unsigned unit, const char *name);
+bool RpcSocketStatusGet(unsigned unit, const char *name, bool *status);
 bool RpcSocketsGet(unsigned unit, GList **sockets);
 
 #endif /* __RPC_H__ */

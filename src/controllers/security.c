@@ -16,6 +16,8 @@
 #include <net/notifier.h>
 #include <db/database.h>
 #include <controllers/socket.h>
+#include <stack/stack.h>
+#include <stack/rpc.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -32,6 +34,7 @@ static struct _Security {
     bool            status;
     bool            alarm;
     bool            last_alarm;
+    bool            sound[SECURITY_SOUND_MAX];
 } Security = {
     .scenario = NULL,
     .sensors = NULL,
@@ -107,11 +110,15 @@ static void AlarmHandler()
     if (Security.alarm) {
         if (Security.last_alarm) {
             Security.last_alarm = false;
-            GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
+            if (Security.sound[SECURITY_SOUND_ALARM]) {
+                GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
+            }
             GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_LED], false);
         } else {
             Security.last_alarm = true;
-            GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
+            if (Security.sound[SECURITY_SOUND_ALARM]) {
+                GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
+            }
             GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_LED], true);
         }
     }
@@ -119,7 +126,7 @@ static void AlarmHandler()
 
 static int BuzzerThread(void *data)
 {
-    if (Security.status) {
+    if (Security.status && Security.sound[SECURITY_SOUND_EXIT]) {
         GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
         UtilsMsecSleep(100);
         GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
@@ -127,7 +134,7 @@ static int BuzzerThread(void *data)
         GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
         UtilsMsecSleep(100);
         GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
-    } else {
+    } else if (!Security.status && Security.sound[SECURITY_SOUND_ENTER]) {
         GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
         UtilsMsecSleep(300);
         GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
@@ -139,10 +146,12 @@ static int NotifyStatusThread(void *data)
 {
     char    msg[STR_LEN];
 
+    StackUnit *unit = StackUnitGet(RPC_DEFAULT_UNIT);
+
     if (Security.status) {
-        snprintf(msg, STR_LEN, "ОХРАНА+сигнализация+включена");
+        snprintf(msg, STR_LEN, "ОХРАНА:%s+сигнализация+включена", unit->name);
     } else {
-        snprintf(msg, STR_LEN, "ОХРАНА+сигнализация+отключена");
+        snprintf(msg, STR_LEN, "ОХРАНА:%s+сигнализация+отключена", unit->name);
     }
 
     if (!NotifierTelegramSend(msg)) {
@@ -225,7 +234,8 @@ static int SensorsThread(void *data)
                         SecurityAlarmSet(true, true);
                     }
 
-                    snprintf(msg, STR_LEN, "ОХРАНА+Обнаружено+проникновение+%s", sensor->name);
+                    StackUnit *unit = StackUnitGet(RPC_DEFAULT_UNIT);
+                    snprintf(msg, STR_LEN, "ОХРАНА:%s+Обнаружено+проникновение+%s", unit->name, sensor->name);
 
                     if (sensor->sms) {
                         if (!NotifierSmsSend(msg)) {
@@ -245,6 +255,7 @@ static int SensorsThread(void *data)
                 }
             }
         }
+
         UtilsSecSleep(1);
     }
 
@@ -314,7 +325,12 @@ static int KeysThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
-bool SecurityScenarioAdd(SecurityScenario *scenario)
+void SecuritySoundSet(SecuritySound sound, bool status)
+{
+    Security.sound[sound] = status;
+}
+
+void SecurityScenarioAdd(SecurityScenario *scenario)
 {
     Security.scenario = g_list_append(Security.scenario, scenario);
 }

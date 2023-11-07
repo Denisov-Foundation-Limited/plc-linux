@@ -22,19 +22,46 @@ typedef enum {
 } MeteoSensorType;
 
 typedef struct {
+    char    id[SHORT_STR_LEN];
+    float   temp;
+} MeteoDs18b20;
+
+typedef struct {
     char            name[SHORT_STR_LEN];
     MeteoSensorType type;
-    char            id[SHORT_STR_LEN];
-    float           temp;
-    float           hum;
-    float           pres;
+    MeteoDs18b20    ds18b20;
     bool            error;
 } MeteoSensor;
 
+/**
+ * @brief Alloc mem for new sensor
+ * 
+ * @param name Name of sensor
+ * @param type Type of sensor
+ * 
+ * @return Meteo sensor
+ */
+MeteoSensor *MeteoSensorNew(const char *name, MeteoSensorType type);
+
+/**
+ * @brief Starting meteo controller
+ *
+ * @return Result of starting
+ */
 bool MeteoControllerStart();
 
+/**
+ * @brief Get all meteo sensors list
+ * 
+ * @return Meteo sensors 
+ */
 GList **MeteoSensorsGet();
 
+/**
+ * @brief Add new meteo sensor
+ * 
+ * @param sensor New meteo sensor struct
+ */
 void MeteoSensorAdd(MeteoSensor *sensor);
 
 #endif /* __METEO_CTRL_H__ */

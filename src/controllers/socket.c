@@ -23,7 +23,7 @@
 
 static struct _Sockets {
     GList   *sockets;
-     mtx_t  db_mtx;
+    mtx_t   db_mtx;
 } Sockets = {
     .sockets = NULL
 };

@@ -8,42 +8,22 @@
 /*                                                                   */
 /*********************************************************************/
 
-#ifndef __TELEGRAM_BOT_H__
-#define __TELEGRAM_BOT_H__
+#ifndef __METEO_HANDLER_H__
+#define __METEO_HANDLER_H__
 
 #include <stdbool.h>
 
-#include <utils/utils.h>
-
-#define TG_BOT_GET_UPDATES_URL  ""
-
-typedef struct {
-    char        name[STR_LEN];
-    unsigned    chat_id;
-} TgBotUser;
+#include <fcgiapp.h>
+#include <glib-2.0/glib.h>
 
 /**
- * @brief Disable Telegram Bot for slave controllers 
+ * @brief Manage meteo controller
+ *
+ * @param req FastCGI request
+ * @param params Request URI params
+ *
+ * @return true/false as result of processing request
  */
-void TgBotDisable();
+bool HandlerMeteoProcess(FCGX_Request *req, GList **params);
 
-/**
- * @brief Add new telegram bot user
- * 
- * @param user New user struct
- */
-void TgBotUserAdd(TgBotUser *user);
-
-/**
- * @brief Set bot token
- */
-void TgBotTokenSet(const char *bot_token);
-
-/**
- * @brief Start telegram bot
- * 
- * @return True/False as result of starting Telegram Bot
- */
-bool TgBotStart();
-
-#endif /* __TELEGRAM_BOT_H__ */
+#endif /* __METEO_HANDLER_H__ */

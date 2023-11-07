@@ -19,6 +19,9 @@
 #include <net/web/webserver.h>
 
 #include <net/web/handlers/securityh.h>
+#include <net/web/handlers/socketh.h>
+#include <net/web/handlers/meteoh.h>
+#include <net/web/handlers/indexh.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -59,13 +62,27 @@ static bool Process(int socketId)
         const char *query = FCGX_GetParam("SCRIPT_NAME", req.envp);
         char *url = FCGX_GetParam("REQUEST_URI", req.envp);
 
-        if (UtilsURIParse(url, &params)) {
-            if (!strcmp(query, SERVER_API_VER "/security")) {
-                if (!HandlerSecurity(&req, &params)) {
-                    Log(LOG_TYPE_ERROR, "SERVER", "Failed to process security controllers get handler");
-                }
-            } else if (!strcmp(query, SERVER_API_VER "/meteo")) {
+        if (!strcmp(query, "/")) {
+            if (!HandlerIndexProcess(&req, NULL)) {
+                Log(LOG_TYPE_ERROR, "SERVER", "Failed to process Index handler");
+            }
+            FCGX_Finish_r(&req);
+            continue;
+        } 
 
+        if (UtilsURIParse(url, &params)) {
+            if (!strcmp(query, "/api/" SERVER_API_VER "/security")) {
+                if (!HandlerSecurityProcess(&req, &params)) {
+                    Log(LOG_TYPE_ERROR, "SERVER", "Failed to process Security controller get handler");
+                }
+            } else if (!strcmp(query, "/api/" SERVER_API_VER "/meteo")) {
+                if (!HandlerMeteoProcess(&req, &params)) {
+                    Log(LOG_TYPE_ERROR, "SERVER", "Failed to process Meteo controller get handler");
+                }
+            } else if (!strcmp(query, "/api/" SERVER_API_VER "/socket")) {
+                if (!HandlerSocketProcess(&req, &params)) {
+                    Log(LOG_TYPE_ERROR, "SERVER", "Failed to process Socket controller get handler");
+                }
             } else {
                 FCGX_PutS("Content-type: text/html\r\n", req.out);
                 FCGX_PutS("\r\n", req.out);

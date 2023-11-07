@@ -35,8 +35,8 @@ static struct _Meteo {
 
 static int SensorsThread(void *data)
 {
-    char    msg[STR_LEN];
     bool    ret = false;
+    float   temp = 0;
 
     for (;;) {
         for (GList *s = Meteo.sensors; s != NULL; s = s->next) {
@@ -44,7 +44,10 @@ static int SensorsThread(void *data)
 
             switch (sensor->type) {
                 case METEO_SENSOR_DS18B20:
-                    ret = OneWireTempRead(sensor->id, &sensor->temp);
+                    ret = OneWireTempRead(sensor->ds18b20.id, &temp);
+                    if (ret) {
+                        sensor->ds18b20.temp = temp;
+                    }
                     break;
             }
 
@@ -52,19 +55,11 @@ static int SensorsThread(void *data)
                 if (!sensor->error) {
                     sensor->error = true;
                     LogF(LOG_TYPE_ERROR, "METEO", "Failed to read temp sensor \"%s\"", sensor->name);
-                    snprintf(msg, STR_LEN, "МЕТЕО+Датчик+%s+отключился", sensor->name);
-                    if (!NotifierTelegramSend(msg)) {
-                        Log(LOG_TYPE_ERROR, "METEO", "Failed to send telegram message");
-                    }
                 }
             } else {
                 if (sensor->error) {
                     sensor->error = false;
-                    LogF(LOG_TYPE_ERROR, "METEO", "Failed to read temp sensor \"%s\"", sensor->name);
-                    snprintf(msg, STR_LEN, "МЕТЕО+Датчик+%s+заработал", sensor->name);
-                    if (!NotifierTelegramSend(msg)) {
-                        Log(LOG_TYPE_ERROR, "METEO", "Failed to send telegram message");
-                    }
+                    LogF(LOG_TYPE_ERROR, "METEO", "Successfully read temp sensor \"%s\"", sensor->name);
                 }
             }
         }
@@ -77,6 +72,18 @@ static int SensorsThread(void *data)
 /*                          PUBLIC FUNCTIONS                         */
 /*                                                                   */
 /*********************************************************************/
+
+MeteoSensor *MeteoSensorNew(const char *name, MeteoSensorType type)
+{
+    MeteoSensor *sensor = (MeteoSensor *)malloc(sizeof(MeteoSensor));
+
+    strncpy(sensor->name, name, SHORT_STR_LEN);
+    sensor->type = type;
+    sensor->error = false;
+    sensor->ds18b20.temp = 0;
+
+    return sensor;
+}
 
 bool MeteoControllerStart()
 {

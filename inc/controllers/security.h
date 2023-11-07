@@ -51,6 +51,13 @@ typedef enum {
     SECURITY_CTRL_SOCKET
 } SecurityScenarioCtrl;
 
+typedef enum {
+    SECURITY_SOUND_ENTER,
+    SECURITY_SOUND_EXIT,
+    SECURITY_SOUND_ALARM,
+    SECURITY_SOUND_MAX
+} SecuritySound;
+
 typedef struct {
     char    name[SHORT_STR_LEN];
     char    id[SHORT_STR_LEN];
@@ -78,7 +85,20 @@ typedef struct {
     SecurityScenarioSocket  socket;
 } SecurityScenario;
 
-bool SecurityScenarioAdd(SecurityScenario *scenario);
+/**
+ * @brief Set security sound status
+ * 
+ * @param sound Sound type
+ * @param status Enabled or disabled status
+ */
+void SecuritySoundSet(SecuritySound sound, bool status);
+
+/**
+ * @brief Add scenario for in, out or other human actions
+ * 
+ * @param scenario Actions
+ */
+void SecurityScenarioAdd(SecurityScenario *scenario);
 
 /**
  * @brief Check security key for all controllers
@@ -89,6 +109,12 @@ bool SecurityScenarioAdd(SecurityScenario *scenario);
  */
 bool SecurityKeyCheck(const char *key);
 
+/**
+ * @brief Set gpio by ID
+ * 
+ * @param id Security GPIO uniq ID
+ * @param gpio GpioPin pointer
+ */
 void SecurityGpioSet(SecurityGpio id, GpioPin *gpio);
 
 /**
@@ -118,6 +144,9 @@ bool SecurityStatusSet(bool status, bool save);
  */
 bool SecurityAlarmSet(bool status, bool save);
 
+/**
+ * @brief Get security Alarm status
+ */
 bool SecurityAlarmGet();
 
 /**

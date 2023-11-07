@@ -32,18 +32,65 @@ typedef struct {
     bool    status;
 } Socket;
 
+/**
+ * @brief Make new Socket struct
+ * 
+ * @param name Name of socket
+ * @param button Socket button gpio
+ * @param relay Socket relay gpio
+ * 
+ * @return Socket struct
+ */
 Socket *SocketNew(const char *name, GpioPin *button, GpioPin *relay);
 
+/**
+ * @brief Start socket buttons monitoring
+ * 
+ * @return True/False as result of starting monitoring
+ */
 bool SocketControllerStart();
 
+/**
+ * @brief Add new socket
+ * 
+ * @param sock Socket struct pointer
+ */
 void SocketAdd(Socket *sock);
 
+/**
+ * @brief Get all existing sockets list
+ * 
+ * @return Sockets list
+ */
 GList **SocketsGet();
 
+/**
+ * @brief Get socket by name
+ * 
+ * @param name Socket name
+ * 
+ * @return Socket Socket struct
+ */
 Socket *SocketGet(const char *name);
 
+/**
+ * @brief Set status of socket
+ * 
+ * @param sock Socket struct pointer
+ * @param status New socket status
+ * @param save Save to database status flag
+ * 
+ * @return True/False as result of setting status
+ */
 bool SocketStatusSet(Socket *sock, bool status, bool save);
 
+/**
+ * @brief Get current socket status
+ * 
+ * @param sock Socket struct pointer
+ * 
+ * @return True/False as socket status
+ */
 bool SocketStatusGet(Socket *sock);
 
 #endif /* __SOCKET_CTRL_H__ */
