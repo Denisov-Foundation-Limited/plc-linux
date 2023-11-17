@@ -1,0 +1,14 @@
+[Unit]
+Description=Future City Programmable Logic Controller
+After=network.target auditd.service
+ConditionPathExists=!/etc/ssh/sshd_not_to_be_run
+
+[Service]
+ExecStart=plc --configs /etc/plc/ --log /var/log/plc/ --db /usr/share/plc/db/
+ExecReload=/bin/kill -HUP $MAINPID
+KillMode=process
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
+Alias=plc.service

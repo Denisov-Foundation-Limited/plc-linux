@@ -1,5 +1,27 @@
 #!/bin/bash
 
+###################################################################
+#
+#                          INSTALL COMMANDS
+#
+###################################################################
+
+for param in "$*"
+do
+    if [[ $param == "--install" ]] ; then
+        mkdir -p /var/log/plc
+        cp -r ./data/configs /etc/plc
+        cp plc /bin/
+        exit 0
+    fi
+done
+
+###################################################################
+#
+#                          FIND LIBS
+#
+###################################################################
+
 function find_libs() {
     if [[ ! -e "/usr/include/arm-linux-gnueabihf/curl/curl.h" ]] ; then
         return 0
@@ -35,6 +57,11 @@ find_libs
 if [[ $? -eq 0 ]] ; then
     apt update && apt install --yes libfcgi-dev libglib2.0-dev libcurl4-openssl-dev \
         libjansson-dev cmake clang make libglib2.0-dev libsqlite3-dev git
+    cp -r ./data/system/default /etc/nginx/sites-enabled/
+    cp ./data/system/plc.service /etc/systemd/system/
+    systemctl enable plc
+    armbian-config
+    reboot
 fi
 
 if [[ ! -e "/usr/lib/libwiringPi.so" ]] ; then
@@ -62,6 +89,12 @@ cat /etc/modprobe.d/w1.conf | grep "slave_ttl=" > /dev/null
 if [[ ! $? -eq 0 ]] ; then
     echo "options wire timeout=1 slave_ttl=1" > /etc/modprobe.d/w1.conf
 fi
+
+###################################################################
+#
+#                          BUILD FUNCTIONS
+#
+###################################################################
 
 cmake .
 cmake --build . -j4

@@ -123,28 +123,45 @@ static int TelegramThread(void *data)
 
         if (WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
             json_t *root = json_loads(buf, 0, &error);
+
             if (root == NULL) {
                 LogF(LOG_TYPE_ERROR, "TGBOT", "Failed to parse telegram request: %s", error.text);
-                thrd_sleep(&(struct timespec){ .tv_sec = 1 }, NULL);
+                UtilsSecSleep(1);
                 continue;
             }
 
             json_array_foreach(json_object_get(root, "result"), index, value) {
                 json_t *message = json_object_get(value, "message");
                 json_t *from = json_object_get(message, "from");
-                int id = json_integer_value(json_object_get(message, "message_id"));
+                json_t *msg_id = json_object_get(message, "message_id");
+
+                if (message == NULL || from == NULL || msg_id == NULL) {
+                    Log(LOG_TYPE_ERROR, "TGBOT", "Failed to parse message & from & msg_id");
+                    UtilsSecSleep(1);
+                    continue;
+                }
+
+                json_t *from_id = json_object_get(from, "id");
+                json_t *text = json_object_get(message, "text");
+
+                if (text == NULL || from_id == NULL) {
+                    Log(LOG_TYPE_ERROR, "TGBOT", "Failed to parse text & from_id");
+                    UtilsSecSleep(1);
+                    continue;
+                }
+
+                int id = json_integer_value(msg_id);
 
                 if (id != TgBot.message_id) {
                     TgBot.message_id = id;
-                    MessageProcess(json_integer_value(json_object_get(from, "id")),
-                                    json_string_value(json_object_get(message, "text")));
+                    MessageProcess(json_integer_value(from_id), json_string_value(text));
                 }
             }
 
             json_decref(root);
         }
 
-        thrd_sleep(&(struct timespec){ .tv_sec = 1 }, NULL);
+        UtilsSecSleep(1);
     }
 
     return 0;

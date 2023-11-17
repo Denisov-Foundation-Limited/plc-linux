@@ -42,13 +42,21 @@ static int SensorsThread(void *data)
         for (GList *s = Meteo.sensors; s != NULL; s = s->next) {
             MeteoSensor *sensor = (MeteoSensor *)s->data;
 
-            switch (sensor->type) {
-                case METEO_SENSOR_DS18B20:
-                    ret = OneWireTempRead(sensor->ds18b20.id, &temp);
-                    if (ret) {
-                        sensor->ds18b20.temp = temp;
-                    }
+            for (unsigned i = 0; i < METEO_SENSOR_TRIES; i++) {
+                switch (sensor->type) {
+                    case METEO_SENSOR_DS18B20:
+                        ret = OneWireTempRead(sensor->ds18b20.id, &temp);
+                        if (ret) {
+                            sensor->ds18b20.temp = temp;
+                        }
+                        break;
+                }
+
+                if (ret) {
                     break;
+                } else {
+                    UtilsSecSleep(2);
+                }
             }
 
             if (!ret) {

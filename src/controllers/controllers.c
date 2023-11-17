@@ -24,14 +24,17 @@ bool ControllersStart()
 {
     if (!SecurityControllerStart()) {
         Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Security controller");
+        return false;
     }
 
     if (!MeteoControllerStart()) {
         Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Meteo controller");
+        return false;
     }
 
     if (!SocketControllerStart()) {
         Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Socket controller");
+        return false;
     }
 
     return true;

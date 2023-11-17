@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
+
 #include <curl/curl.h>
 #include <jansson.h>
 
@@ -29,16 +30,40 @@
 /*                                                                   */
 /*********************************************************************/
 
-static bool TgBotResponseSend(const char *token, unsigned id, const char *text, const char *markup)
+static bool TgBotResponseSend(const char *token, unsigned id, const char *text, json_t *buttons)
 {
     char    url[STR_LEN];
     char    post[EXT_STR_LEN];
     char    buf[BUFFER_LEN_MAX];
+    json_t *root = json_object();
 
     snprintf(url, STR_LEN, "https://api.telegram.org/bot%s/sendMessage", token);
-    snprintf(post, EXT_STR_LEN, "chat_id=%d&parse_mode=HTML&text=%s&reply_markup={\"keyboard\":%s}", id, text, markup);
+
+    json_object_set_new(root, "keyboard", buttons);
+    char *markup = json_dumps(root, JSON_INDENT(0));
+    snprintf(post, EXT_STR_LEN, "chat_id=%d&parse_mode=HTML&text=%s&reply_markup=%s", id, text, markup);
+    free(markup);
+    json_decref(root);
 
     return WebClientRequest(WEB_REQ_POST, url, post, buf);
+}
+
+static void TgBotButtonAdd(json_t *buttons, const char *name)
+{
+    json_t *butline = json_array();
+    json_array_append_new(butline, json_string(name));
+    json_array_append_new(buttons, butline);
+}
+
+static void TgBotButtonsAdd(json_t *buttons, unsigned count, const char *name[])
+{
+    json_t *butline = json_array();
+
+    for (unsigned i = 0; i < count; i++) {
+        json_array_append_new(butline, json_string(name[i]));
+    }
+
+    json_array_append_new(buttons, butline);
 }
 
 /*********************************************************************/
@@ -49,50 +74,49 @@ static bool TgBotResponseSend(const char *token, unsigned id, const char *text, 
 
 void StackSelectMenuProcess(const char *token, unsigned from, const char *message)
 {
-    char    buttons[EXT_STR_LEN];
-    char    button[STR_LEN];
+    json_t  *buttons = json_array();
     GList   *units = NULL;
 
     StackActiveUnitsGet(&units);
 
-    strncpy(buttons, "[", EXT_STR_LEN);
-
     for (GList *u = units; u != NULL; u = u->next) {
         StackUnit *unit = (StackUnit *)u->data;
-        snprintf(button, STR_LEN, "[\"%s\"],", unit->name);
-        strcat(buttons, button);
+        TgBotButtonAdd(buttons, unit->name);
     }
     g_list_free(units);
 
-    strcat(buttons, "[\"Обновить\"]]");
+    TgBotButtonAdd(buttons, "Обновить");
     TgBotResponseSend(token, from, "<b>ВЫБОР ОБЪЕКТА</b>\n\nДобро пожаловать в Умный Дом", buttons);
 }
 
 void MainMenuProcess(const char *token, unsigned from, const char *message)
 {
-    char    text[EXT_STR_LEN];
-
-    StackUnit *unit = TgMenuUnitGet(from);
+    char        text[EXT_STR_LEN];
+    json_t      *buttons = json_array();
+    StackUnit   *unit = TgMenuUnitGet(from);
+    const char  *line0[] = {"Метео", "Охрана"};
+    const char  *line1[] = {"Розетки", "Назад"};
 
     snprintf(text, EXT_STR_LEN, "<b>ГЛАВНОЕ МЕНЮ: %s</b>\n", unit->name);
-    TgBotResponseSend(token, from, text, "[[\"Метео\"],[\"Охрана\"],[\"Розетки\"],[\"Назад\"]]");
+
+    TgBotButtonsAdd(buttons, 2, line0);
+    TgBotButtonsAdd(buttons, 2, line1);
+    TgBotResponseSend(token, from, text, buttons);
 }
 
 void SocketMenuProcess(const char *token, unsigned from, const char *message)
 {
-    char    text[EXT_STR_LEN];
-    char    sock_text[STR_LEN];
-    char    buttons[EXT_STR_LEN];
-    char    button[STR_LEN];
-    char    status_text[STR_LEN];
-    GList   *sockets = NULL;
-    bool    ret = false;
-    bool    status = false;
-
-    StackUnit *unit = TgMenuUnitGet(from);
+    char        text[EXT_STR_LEN];
+    char        sock_text[STR_LEN];
+    char        status_text[STR_LEN];
+    GList       *sockets = NULL;
+    bool        ret = false;
+    bool        status = false;
+    json_t      *buttons = json_array();
+    StackUnit   *unit = TgMenuUnitGet(from);
+    const char  *line_last[] = {"Обновить", "Назад"};
 
     snprintf(text, EXT_STR_LEN, "<b>РОЗЕТКИ: %s</b>\n\n", unit->name);
-    strncpy(buttons, "[", EXT_STR_LEN);
 
     if (strcmp(message, "Розетки") && strcmp(message, "Назад") && strcmp(message, "Обновить")) {
         if (!RpcSocketStatusGet(unit->id, message, &status)) {
@@ -110,8 +134,7 @@ void SocketMenuProcess(const char *token, unsigned from, const char *message)
         for (GList *s = sockets; s != NULL; s = s->next) {
             RpcSocket *socket = (RpcSocket *)s->data;
 
-            snprintf(button, STR_LEN, "[\"%s\"],", socket->name);
-            strcat(buttons, button);
+            TgBotButtonAdd(buttons, socket->name);
 
             if (socket->status) {
                 strncpy(status_text, "Включен", STR_LEN);
@@ -127,20 +150,20 @@ void SocketMenuProcess(const char *token, unsigned from, const char *message)
     } else {
         strcat(text, "<b>Ошибка</b>");
     }
-    strcat(buttons, "[\"Обновить\",\"Назад\"]]");
 
+    TgBotButtonsAdd(buttons, 2, line_last);
     TgBotResponseSend(token, from, text, buttons);
 }
 
 void MeteoMenuProcess(const char *token, unsigned from, const char *message)
 {
-    char    text[EXT_STR_LEN];
-    char    sensor_text[STR_LEN];
-    char    buttons[EXT_STR_LEN];
-    GList   *sensors = NULL;
-    bool    ret = false;
-
-    StackUnit *unit = TgMenuUnitGet(from);
+    char        text[EXT_STR_LEN];
+    char        sensor_text[STR_LEN];
+    GList       *sensors = NULL;
+    bool        ret = false;
+    json_t      *buttons = json_array();
+    StackUnit   *unit = TgMenuUnitGet(from);
+    const char  *line_last[] = {"Обновить", "Назад"};
 
     snprintf(text, EXT_STR_LEN, "<b>МЕТЕО: %s</b>\n\n", unit->name);
 
@@ -164,22 +187,23 @@ void MeteoMenuProcess(const char *token, unsigned from, const char *message)
         strcat(text, "<b>Ошибка</b>");
     }
 
-    TgBotResponseSend(token, from, text, "[[\"Обновить\"],[\"Назад\"]]");
+    TgBotButtonsAdd(buttons, 2, line_last);
+    TgBotResponseSend(token, from, text, buttons);
 }
 
 void SecurityMenuProcess(const char *token, unsigned from, const char *message)
 {
-    char    text[EXT_STR_LEN];
-    char    status_text[STR_LEN];
-    char    buttons[STR_LEN];
-    char    name_text[STR_LEN];
-    char    siren_text[STR_LEN];
-    bool    ret = false;
-    bool    status = false;
-    bool    alarm = false;
-    GList   *sensors = NULL;
-
-    StackUnit *unit = TgMenuUnitGet(from);
+    char        text[EXT_STR_LEN];
+    char        status_text[STR_LEN];
+    char        name_text[STR_LEN];
+    char        siren_text[STR_LEN];
+    bool        ret = false;
+    bool        status = false;
+    bool        alarm = false;
+    GList       *sensors = NULL;
+    StackUnit   *unit = TgMenuUnitGet(from);
+    json_t      *buttons = json_array();
+    const char  *line_last[] = {"Обновить", "Назад"};
 
     if (!strcmp(message, "Включить")) {
         if (!RpcSecurityStatusSet(unit->id, true)) {
@@ -199,15 +223,14 @@ void SecurityMenuProcess(const char *token, unsigned from, const char *message)
 
     if (ret) {
         if (status) {
+            TgBotButtonAdd(buttons, "Отключить");
             strncpy(status_text, "Работает", STR_LEN);
-            strncpy(buttons, "[[\"Отключить\"], [\"Сирена\"], [\"Обновить\", \"Назад\"]]", STR_LEN);
         } else {
+            TgBotButtonAdd(buttons, "Включить");
             strncpy(status_text, "Отключен", STR_LEN);
-            strncpy(buttons, "[[\"Включить\"], [\"Сирена\"], [\"Обновить\", \"Назад\"]]", STR_LEN);
         }
     } else {
         strncpy(status_text, "Ошибка", STR_LEN);
-        strncpy(buttons, "[[\"Сирена\"], [\"Обновить\", \"Назад\"]]", STR_LEN);
     }
 
     ret = RpcSecurityAlarmGet(unit->id, &alarm);
@@ -255,5 +278,7 @@ void SecurityMenuProcess(const char *token, unsigned from, const char *message)
         strcat(text, "<b>Ошибка</b>\n");
     }
 
+    TgBotButtonAdd(buttons, "Сирена");
+    TgBotButtonsAdd(buttons, 2, line_last);
     TgBotResponseSend(token, from, text, buttons);
 }

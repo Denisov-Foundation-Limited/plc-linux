@@ -16,17 +16,16 @@
     },
 
     "tgbot": {
+        "enabled": true,
         "token": "",
         "users": [
-            { "name": "sergey", "id": 1  }
+            { "name": "sergey", "id": 0 }
         ]
     },
 
     "stack": {
         "units": [
-            { "id": 0, "name": "Дом",    "ip": "0.0.0.0", "port": 0 },
-            { "id": 1, "name": "Баня",   "ip": "0.0.0.0", "port": 0 },
-            { "id": 2, "name": "Огород", "ip": "0.0.0.0", "port": 0 }
+            { "id": 0, "name": "Кабинет", "ip": "0.0.0.0", "port": 0 }
         ]
     }
 }

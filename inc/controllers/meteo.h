@@ -17,6 +17,8 @@
 
 #include <utils/utils.h>
 
+#define METEO_SENSOR_TRIES  5
+
 typedef enum {
     METEO_SENSOR_DS18B20
 } MeteoSensorType;

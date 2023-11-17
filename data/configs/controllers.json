@@ -1,14 +1,24 @@
 {
     "meteo": {
         "sensors": [
-            { "name": "Улица", "type": "ds18b20", "id": "" },
-            { "name": "Кабинет", "type": "ds18b20", "id": "" },
-            { "name": "Бак", "type": "ds18b20", "id": "" }
+            {
+                "name": "Улица",
+                "type": "ds18b20",
+                "id": "",
+                "notify": {
+                    "enabled": false,
+                    "threshold": 0
+                }
+            }
         ]
     },
 
     "socket": [
-        { "name": "Электрощит", "gpio": { "button": "ext-opto-4", "relay": "ext-rly16-2" } }
+        { "name": "Лампа",   "gpio": { "button": "ext-opto-1", "relay": "ext-rly10-4" } },
+        { "name": "Свитч 1", "gpio": { "button": "none",       "relay": "ext-rly16-1" } },
+        { "name": "Свитч 2", "gpio": { "button": "none",       "relay": "ext-rly16-2" } },
+        { "name": "Свитч 3", "gpio": { "button": "none",       "relay": "ext-rly10-1" } },
+        { "name": "Свитч 4", "gpio": { "button": "none",       "relay": "ext-rly10-2" } }
     ],
 
     "security": {
@@ -17,25 +27,55 @@
             "buzzer": "ext-buzzer",
             "alarm": {
                 "led": "cpu-led-alrm",
-                "relay": "ext-rly16-1"
+                "relay": "none"
             }
         },
 
+        "sound": {
+            "enter": true,
+            "exit":  true,
+            "alarm": false
+        },
+
         "scenario": [
-            { "type": "in",  "ctrl": "socket", "socket": { "name": "Электрощит", "status": true } },
-            { "type": "out", "ctrl": "socket", "socket": { "name": "Электрощит", "status": false } }
+            { "type": "in",  "ctrl": "socket", "socket": { "name": "Лампа", "status": true  } },
+            { "type": "out", "ctrl": "socket", "socket": { "name": "Лампа", "status": false } }
         ],
 
         "sensors": [
-            { "name": "Комната Дверь", "type": "reed",       "gpio": "ext-opto-8", "telegram": true, "sms": true, "alarm": true },
-            { "name": "Крыльцо Дверь", "type": "reed",       "gpio": "ext-opto-7", "telegram": true, "sms": true, "alarm": true },
-            { "name": "Веранда",       "type": "microwave",  "gpio": "ext-opto-6", "telegram": true, "sms": true, "alarm": true },
-            { "name": "Кухня",         "type": "microwave",  "gpio": "ext-opto-5", "telegram": true, "sms": true, "alarm": true }
+            { "name": "Стул", "type": "microwave",  "gpio": "ext-opto-5", "telegram": true, "sms": false, "alarm": false },
+            { "name": "Ящик", "type": "reed",       "gpio": "ext-opto-3", "telegram": true, "sms": true,  "alarm": true  }
         ],
 
         "keys": [
-            { "name": "parents", "id": "" },
-            { "name": "sergey",  "id": "" }
         ]
-    }
+    },
+
+    "tank": [
+        {
+            "name": "Еврокуб",
+            "gpio": {
+                "pump": "none",
+                "valve": "none"
+            },
+            "levels": [
+                { "type": "low",    "percent": 30,  "gpio": "ext-opto-8", "notify": true  },
+                { "type": "middle", "percent": 70,  "gpio": "ext-opto-7", "notify": false },
+                { "type": "high",   "percent": 100, "gpio": "ext-opto-6", "notify": false }
+            ]
+        }
+    ],
+
+    "water": [
+        { 
+            "name": "Теплица1",
+            "gpio": "none",
+            "time": [
+                { "action": "on",  "day": 0, "hour": 0, "min": 0, "notify": false },
+                { "action": "off", "day": 0, "hour": 0, "min": 0, "notify": false },
+                { "action": "on",  "day": 0, "hour": 0, "min": 0, "notify": false },
+                { "action": "off", "day": 0, "hour": 0, "min": 0, "notify": false }
+            ]
+        }
+    ]
 }

@@ -43,12 +43,14 @@ static bool HandlerSensorsGet(FCGX_Request *req, GList **params)
         json_t *jsensor = json_object();
         json_object_set_new(jsensor, "name", json_string(sensor->name));
         json_object_set_new(jsensor, "type", json_integer(sensor->type));
+
         switch (sensor->type) {
             case RPC_METEO_SENSOR_DS18B20:
                 json_object_set_new(jsensor, "ds18b20", json_object());
                 json_object_set_new(json_object_get(jsensor, "ds18b20"), "temp", json_real(sensor->ds18b20.temp));
                 break;
         }
+
         json_array_append_new(jsensors, jsensor);
 
         free(sensor);
