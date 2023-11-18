@@ -20,7 +20,7 @@
 
 #define SECURITY_DB_FILE    "security.db"
 
-#define SECURITY_DETECTED_TIME_MAX_SEC  10
+#define SECURITY_DETECTED_TIME_MAX_SEC  3
 #define SECURITY_SENSOR_TIME_MAX_SEC    60
 
 typedef enum {

@@ -142,7 +142,7 @@ void SocketMenuProcess(const char *token, unsigned from, const char *message)
                 strncpy(status_text, "Отключен", STR_LEN);
             }
 
-            snprintf(sock_text, STR_LEN, "        %-20s: <b>%s</b>\n", socket->name, status_text);
+            snprintf(sock_text, STR_LEN, "        %s: <b>%s</b>\n", socket->name, status_text);
             strcat(text, sock_text);
             free(socket);
         }
@@ -175,7 +175,7 @@ void MeteoMenuProcess(const char *token, unsigned from, const char *message)
 
             switch (sensor->type) {
                 case RPC_METEO_SENSOR_DS18B20:
-                    snprintf(sensor_text, STR_LEN, "        %-20s: <b>%.1f°</b>\n", sensor->name, sensor->ds18b20.temp);
+                    snprintf(sensor_text, STR_LEN, "        %s: <b>%.1f°</b>\n", sensor->name, sensor->ds18b20.temp);
                     break;
             }
 
@@ -245,7 +245,7 @@ void SecurityMenuProcess(const char *token, unsigned from, const char *message)
         strncpy(siren_text, "Ошибка", STR_LEN);
     }
 
-    snprintf(text, STR_LEN, "<b>ОХРАНА: %s</b>\n\n        %-20s: <b>%-20s</b>\n        %-20s: <b>%-20s</b>\n\n<b>Датчики:</b>\n\n",
+    snprintf(text, STR_LEN, "<b>ОХРАНА: %s</b>\n\n        %s: <b>%s</b>\n        %s: <b>%s</b>\n\n<b>Датчики:</b>\n\n",
             unit->name, "Статус", status_text, "Сирена", siren_text);
 
     ret = RpcSecuritySensorsGet(unit->id, &sensors);
@@ -254,7 +254,7 @@ void SecurityMenuProcess(const char *token, unsigned from, const char *message)
         for (GList *c = sensors; c != NULL; c = c->next) {
             RpcSecuritySensor *sensor = (RpcSecuritySensor *)c->data;
 
-            snprintf(name_text, STR_LEN, "        %-20s : <b>", sensor->name);
+            snprintf(name_text, STR_LEN, "        %s : <b>", sensor->name);
             strcat(text, name_text);
 
             if (sensor->detected) {
@@ -267,7 +267,7 @@ void SecurityMenuProcess(const char *token, unsigned from, const char *message)
                 if (sensor->type == RPC_SECURITY_SENSOR_REED) {
                     strcat(text, "Закрыт</b>\n");
                 } else {
-                    strcat(text, "Нет движения</b>\n");
+                    strcat(text, "Никого</b>\n");
                 }
             }
 
