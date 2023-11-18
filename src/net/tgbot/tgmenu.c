@@ -104,12 +104,12 @@ void TgMenuBack(unsigned from)
         if (menu->from == from) {
 
             switch (menu->level) {
-                case TG_MENU_LVL_MAIN:
-                    menu->level = TG_MENU_LVL_STACK_SELECT;
+                case TG_MENU_LVL_SOCKET_SELECT:
+                    menu->level = TG_MENU_LVL_MAIN;
                     break;
 
                 case TG_MENU_LVL_SOCKET:
-                    menu->level = TG_MENU_LVL_MAIN;
+                    menu->level = TG_MENU_LVL_SOCKET_SELECT;
                     break;
 
                 case TG_MENU_LVL_SECURITY:

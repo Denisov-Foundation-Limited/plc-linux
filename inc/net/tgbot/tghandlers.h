@@ -38,6 +38,9 @@ void MeteoMenuProcess(const char *token, unsigned from, const char *message);
  */
 void StackSelectMenuProcess(const char *token, unsigned from, const char *message);
 
+
+void SocketSelectMenuProcess(const char *token, unsigned from, const char *message);
+
 /**
  * @brief Socket menu of bot
  * 

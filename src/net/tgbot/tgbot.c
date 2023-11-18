@@ -20,6 +20,11 @@
 #include <utils/log.h>
 #include <stack/stack.h>
 
+#include <net/tgbot/handlers/tgsocket.h>
+#include <net/tgbot/handlers/tgsecurity.h>
+#include <net/tgbot/handlers/tgmeteo.h>
+#include <net/tgbot/handlers/tgmain.h>
+
 /*********************************************************************/
 /*                                                                   */
 /*                         PRIVATE VARIABLES                         */
@@ -66,45 +71,45 @@ static void MessageProcess(unsigned from, const char *message)
     }
 
     switch (TgMenuLevelGet(from)) {
-        case TG_MENU_LVL_STACK_SELECT:
-            if (strcmp(message, "Назад")) {
-                if (StackUnitNameCheck(message)) {
-                    TgMenuUnitSet(from, StackUnitNameGet(message));
-                    TgMenuLevelSet(from, TG_MENU_LVL_MAIN);
-                }
-            }
-            break;
-
         case TG_MENU_LVL_MAIN:
             if (!strcmp(message, "Охрана")) {
                 TgMenuLevelSet(from, TG_MENU_LVL_SECURITY);
             } else if (!strcmp(message, "Метео")) {
                 TgMenuLevelSet(from, TG_MENU_LVL_METEO);
             } else if (!strcmp(message, "Розетки")) {
-                TgMenuLevelSet(from, TG_MENU_LVL_SOCKET);
+                TgMenuLevelSet(from, TG_MENU_LVL_SOCKET_SELECT);
+            }
+            break;
+
+        case TG_MENU_LVL_SOCKET_SELECT:
+            if (strcmp(message, "Назад")) {
+                if (StackUnitNameCheck(message)) {
+                    TgMenuUnitSet(from, StackUnitNameGet(message));
+                    TgMenuLevelSet(from, TG_MENU_LVL_SOCKET);
+                }
             }
             break;
     }
 
     switch (TgMenuLevelGet(from)) {
-        case TG_MENU_LVL_STACK_SELECT:
-            StackSelectMenuProcess(TgBot.token, from, message);
+        case TG_MENU_LVL_MAIN:
+            TgMainProcess(TgBot.token, from, message);
             break;
 
-        case TG_MENU_LVL_MAIN:
-            MainMenuProcess(TgBot.token, from, message);
+        case TG_MENU_LVL_SOCKET_SELECT:
+            TgSocketSelectProcess(TgBot.token, from, message);
             break;
 
         case TG_MENU_LVL_SOCKET:
-            SocketMenuProcess(TgBot.token, from, message);
+            TgSocketProcess(TgBot.token, from, message);
             break;
 
         case TG_MENU_LVL_SECURITY:
-            SecurityMenuProcess(TgBot.token, from, message);
+            TgSecurityProcess(TgBot.token, from, message);
             break;
 
         case TG_MENU_LVL_METEO:
-            MeteoMenuProcess(TgBot.token, from, message);
+            TgMeteoProcess(TgBot.token, from, message);
             break;
     }
 }

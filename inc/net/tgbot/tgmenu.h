@@ -17,16 +17,17 @@
 
 typedef enum {
     TG_MENU_LVL_MAIN,
-    TG_MENU_LVL_STACK_SELECT,
     TG_MENU_LVL_METEO,
     TG_MENU_LVL_SECURITY_SELECT,
     TG_MENU_LVL_SECURITY,
+    TG_MENU_LVL_SOCKET_SELECT,
     TG_MENU_LVL_SOCKET
 } TgMenuLevel;
 
 typedef struct {
     unsigned    from;
     TgMenuLevel level;
+    TgMenuLevel prev;
     StackUnit   *unit;
     char        data[STR_LEN];
 } TgMenu;

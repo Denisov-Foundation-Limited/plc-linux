@@ -459,7 +459,7 @@ static bool PlcRead(const char *path)
             strncpy(user->name, json_string_value(json_object_get(value, "name")), STR_LEN);
             user->chat_id = json_integer_value(json_object_get(value, "id"));
             menu->from = user->chat_id;
-            menu->level = TG_MENU_LVL_STACK_SELECT;
+            menu->level = TG_MENU_LVL_MAIN;
 
             TgBotUserAdd(user);
             TgMenuAdd(menu);
