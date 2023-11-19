@@ -19,6 +19,7 @@
 #include <utils/configs/cfgsecurity.h>
 #include <utils/configs/cfgmeteo.h>
 #include <utils/configs/cfgsocket.h>
+#include <utils/configs/cfgtank.h>
 #include <core/gpio.h>
 #include <core/extenders.h>
 #include <core/lcd.h>
@@ -214,19 +215,25 @@ static bool ControllersRead(const char *path)
 
     if (!CfgSecurityLoad(data)) {
         json_decref(data);
-        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load security configs");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load security configs");
         return false;
     }
 
     if (!CfgMeteoLoad(data)) {
         json_decref(data);
-        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load meteo configs");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load meteo configs");
         return false;
     }
 
     if (!CfgSocketLoad(data)) {
         json_decref(data);
-        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load socket configs");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load socket configs");
+        return false;
+    }
+
+    if (!CfgTankLoad(data)) {
+        json_decref(data);
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load tank configs");
         return false;
     }
 

@@ -51,12 +51,17 @@
             "name": "Еврокуб",
             "gpio": {
                 "pump": "none",
-                "valve": "none"
+                "valve": "none",
+                "status": {
+                    "led": "none",
+                    "button": "none"
+                }
             },
             "levels": [
-                { "type": "low",    "percent": 30,  "gpio": "ext-opto-8", "notify": true  },
-                { "type": "middle", "percent": 70,  "gpio": "ext-opto-7", "notify": false },
-                { "type": "high",   "percent": 100, "gpio": "ext-opto-6", "notify": false }
+                { "percent": 0,   "gpio": "none",       "notify": true  },
+                { "percent": 30,  "gpio": "ext-opto-8", "notify": false },
+                { "percent": 70,  "gpio": "ext-opto-7", "notify": false },
+                { "percent": 100, "gpio": "ext-opto-6", "notify": false }
             ]
         }
     ],

@@ -63,7 +63,7 @@ bool CfgMeteoLoad(json_t *data)
     Log(LOG_TYPE_INFO, "CONFIGS", "Add Meteo controller");
 
     if (!CfgMeteoSensorsLoad(jmeteo)) {
-        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load meteo sensors configs");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load meteo sensors configs");
         return false;
     }
 

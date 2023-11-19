@@ -146,22 +146,22 @@ bool CfgSecurityLoad(json_t *data)
     Log(LOG_TYPE_INFO, "CONFIGS", "Add Security controller");
 
     if (!CfgSecuritySoundLoad(jsecurity)) {
-        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load security sound configs");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load security sound configs");
         return false;
     }
 
     if (!CfgSecurityGpioLoad(jsecurity)) {
-        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load security GPIO configs");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load security GPIO configs");
         return false;
     }
 
     if (!CfgSecuritySensorsLoad(jsecurity)) {
-        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load security sensors configs");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load security sensors configs");
         return false;
     }
 
     if (!CfgSecurityKeysLoad(jsecurity)) {
-        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load security keys configs");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load security keys configs");
         return false;
     }
     

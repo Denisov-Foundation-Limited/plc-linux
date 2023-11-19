@@ -13,6 +13,7 @@
 #include <controllers/meteo.h>
 #include <utils/log.h>
 #include <controllers/socket.h>
+#include <controllers/tank.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -34,6 +35,11 @@ bool ControllersStart()
 
     if (!SocketControllerStart()) {
         Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Socket controller");
+        return false;
+    }
+
+    if (!TankControllerStart()) {
+        Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Tank controller");
         return false;
     }
 
