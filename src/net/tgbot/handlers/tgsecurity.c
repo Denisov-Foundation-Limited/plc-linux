@@ -18,6 +18,12 @@
 #include <net/tgbot/tgmenu.h>
 #include <utils/log.h>
 
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
 void TgSecurityProcess(const char *token, unsigned from, const char *message)
 {
     bool        status = false;
@@ -61,9 +67,9 @@ void TgSecurityProcess(const char *token, unsigned from, const char *message)
 
     if (RpcSecurityAlarmGet(RPC_DEFAULT_UNIT, &alarm)) {
         if (alarm) {
-            text = g_string_append(text, "Работает</b>\n\n");
+            text = g_string_append(text, "Работает</b>\n");
         } else {
-            text = g_string_append(text, "Отключена</b>\n\n");
+            text = g_string_append(text, "Отключена</b>\n");
         }
     } else {
         text = g_string_append(text, "Ошибка</b>\n\n");

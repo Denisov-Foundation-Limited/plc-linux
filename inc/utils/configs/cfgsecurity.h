@@ -8,18 +8,20 @@
 /*                                                                   */
 /*********************************************************************/
 
-#ifndef __TG_SECURITY_H__
-#define __TG_SECURITY_H__
+#ifndef __CFG_SECURITY_H__
+#define __CFG_SECURITY_H__
 
 #include <stdbool.h>
 
-/**
- * @brief Process Security Menu commands
- * 
- * @param token Telegram Bot uniq token
- * @param from From user id
- * @param message Telegram message 
- */
-void TgSecurityProcess(const char *token, unsigned from, const char *message);
+#include <jansson.h>
 
-#endif /* __TG_SECURITY_H__ */
+/**
+ * @brief Loading security configurations
+ * 
+ * @param data JSON configs data
+ * 
+ * @return True/False as result of loading configs 
+ */
+bool CfgSecurityLoad(json_t *data);
+
+#endif /* __CFG_SECURITY_H__ */

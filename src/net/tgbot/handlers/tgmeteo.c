@@ -18,6 +18,12 @@
 #include <net/tgbot/tgmenu.h>
 #include <utils/log.h>
 
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
 void TgMeteoProcess(const char *token, unsigned from, const char *message)
 {
     GList       *sensors = NULL;

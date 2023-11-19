@@ -13,6 +13,12 @@
 #include <net/tgbot/handlers/tgmain.h>
 #include <net/tgbot/tgresp.h>
 
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
 void TgMainProcess(const char *token, unsigned from, const char *message)
 {
     json_t      *buttons = json_array();

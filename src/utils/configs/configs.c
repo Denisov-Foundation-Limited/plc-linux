@@ -15,7 +15,10 @@
 
 #include <utils/utils.h>
 #include <utils/log.h>
-#include <utils/configs.h>
+#include <utils/configs/configs.h>
+#include <utils/configs/cfgsecurity.h>
+#include <utils/configs/cfgmeteo.h>
+#include <utils/configs/cfgsocket.h>
 #include <core/gpio.h>
 #include <core/extenders.h>
 #include <core/lcd.h>
@@ -23,11 +26,8 @@
 #include <net/web/webserver.h>
 #include <net/tgbot/tgbot.h>
 #include <net/tgbot/tgmenu.h>
-#include <controllers/security.h>
 #include <db/database.h>
-#include <controllers/meteo.h>
 #include <stack/stack.h>
-#include <controllers/socket.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -216,197 +216,22 @@ static bool ControllersRead(const char *path)
         return false;
     }
 
-    /**
-     * Reading Security configs
-     */
-
-    json_t *jsecurity = json_object_get(data, "security");
-    
-    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Security controller");
-
-    /**
-     * Add security GPIOs
-     */
-
-    json_t *jgpio = json_object_get(jsecurity, "gpio");
-    gpio = GpioPinGet(json_string_value(json_object_get(jgpio, "status")));
-    if (gpio == NULL) {
+    if (!CfgSecurityLoad(data)) {
         json_decref(data);
-        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Status LED GPIO \"%s\" not found", json_string_value(json_object_get(jgpio, "status")));
+        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load security configs");
         return false;
     }
-    SecurityGpioSet(SECURITY_GPIO_STATUS_LED, gpio);
 
-    gpio = GpioPinGet(json_string_value(json_object_get(jgpio, "buzzer")));
-    if (gpio == NULL) {
+    if (!CfgMeteoLoad(data)) {
         json_decref(data);
-        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Buzzer GPIO \"%s\" not found", json_string_value(json_object_get(jgpio, "buzzer")));
+        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load meteo configs");
         return false;
     }
-    SecurityGpioSet(SECURITY_GPIO_BUZZER, gpio);
-    
-    json_t *jalarm = json_object_get(jgpio, "alarm");
-    gpio = GpioPinGet(json_string_value(json_object_get(jalarm, "led")));
-    if (gpio == NULL) {
+
+    if (!CfgSocketLoad(data)) {
         json_decref(data);
-        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Alarm LED GPIO \"%s\" not found", json_string_value(json_object_get(jalarm, "led")));
+        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load socket configs");
         return false;
-    }
-    SecurityGpioSet(SECURITY_GPIO_ALARM_LED, gpio);
-
-    gpio = GpioPinGet(json_string_value(json_object_get(jalarm, "relay")));
-    if (gpio == NULL) {
-        json_decref(data);
-        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Alarm Relay GPIO \"%s\" not found",
-            json_string_value(json_object_get(jalarm, "relay")));
-        return false;
-    }
-    SecurityGpioSet(SECURITY_GPIO_ALARM_RELAY, gpio);
-
-    /**
-     * Add security sensors
-     */
-
-    json_array_foreach(json_object_get(jsecurity, "sensors"), ext_index, ext_value) {
-        SecuritySensor *sensor = (SecuritySensor *)malloc(sizeof(SecuritySensor));
-
-        strncpy(sensor->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
-
-        sensor->gpio = GpioPinGet(json_string_value(json_object_get(ext_value, "gpio")));
-        if (sensor->gpio == NULL) {
-            json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Security sensor \"%s\" error: GPIO \"%s\" not found",
-                sensor->name, json_string_value(json_object_get(ext_value, "gpio")));
-            return false;
-        }
-
-        const char *type_str = json_string_value(json_object_get(ext_value, "type"));
-        if (!strcmp(type_str, "reed")) {
-            sensor->type = SECURITY_SENSOR_REED;
-        } else if (!strcmp(type_str, "pir")) {
-            sensor->type = SECURITY_SENSOR_PIR;
-        } else if (!strcmp(type_str, "microwave")) {
-            sensor->type = SECURITY_SENSOR_MICRO_WAVE;
-        } else {
-            json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown Security sensor \"%s\" type: \"%s\"", sensor->name, type_str);
-            return false;
-        }
-
-        sensor->telegram = json_boolean_value(json_object_get(ext_value, "telegram"));
-        sensor->sms = json_boolean_value(json_object_get(ext_value, "sms"));
-        sensor->alarm = json_boolean_value(json_object_get(ext_value, "alarm"));
-        sensor->detected = false;
-        sensor->counter = 0;
-
-        SecuritySensorAdd(sensor);
-
-        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Security sensor name: \"%s\" gpio: \"%s\" type: \"%s\" telegram: \"%d\" sms: \"%d\" alarm: \"%d\"",
-            sensor->name, json_string_value(json_object_get(ext_value, "gpio")),
-            type_str, sensor->telegram, sensor->sms, sensor->alarm);
-    }
-
-    /**
-     * Add security keys
-     */
-
-    json_array_foreach(json_object_get(jsecurity, "keys"), ext_index, ext_value) {
-        SecurityKey *key = (SecurityKey *)malloc(sizeof(SecurityKey));
-
-        strncpy(key->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
-        strncpy(key->id, json_string_value(json_object_get(ext_value, "id")), SHORT_STR_LEN);
-
-        SecurityKeyAdd(key);
-        LogF(LOG_TYPE_INFO, "CONFIGS", "Add security key: \"%s\"", key->name);
-    }
-
-    /**
-     * Add Security scenario
-     */
-
-    json_array_foreach(json_object_get(jsecurity, "scenario"), ext_index, ext_value) {
-        SecurityScenario *scenario = (SecurityScenario *)malloc(sizeof(SecurityScenario));
-
-        if (!strcmp(json_string_value(json_object_get(ext_value, "type")), "in")) {
-            scenario->type = SECURITY_SCENARIO_IN;
-        } else {
-            scenario->type = SECURITY_SCENARIO_OUT;
-        }
-
-        if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "socket")) {
-            json_t *jsocket = json_object_get(ext_value, "socket");
-            strncpy(scenario->socket.name, json_string_value(json_object_get(jsocket, "name")), SHORT_STR_LEN);
-            scenario->socket.status = json_boolean_value(json_object_get(jsocket, "status"));
-            scenario->ctrl = SECURITY_CTRL_SOCKET;
-        }
-
-        SecurityScenarioAdd(scenario);
-    }
-
-    json_t *jsound = json_object_get(jsecurity, "sound");
-    SecuritySoundSet(SECURITY_SOUND_ENTER, json_boolean_value(json_object_get(jsound, "enter")));
-    SecuritySoundSet(SECURITY_SOUND_EXIT, json_boolean_value(json_object_get(jsound, "exit")));
-    SecuritySoundSet(SECURITY_SOUND_ALARM, json_boolean_value(json_object_get(jsound, "alarm")));
-
-    /**
-     * Reading Meteo configs
-     */
-
-    json_t *jmeteo = json_object_get(data, "meteo");
-    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Meteo controller");
-
-    json_array_foreach(json_object_get(jmeteo, "sensors"), ext_index, ext_value) {
-        MeteoSensor *sensor;
-
-        if (!strcmp(json_string_value(json_object_get(ext_value, "type")), "ds18b20")) {
-            sensor = MeteoSensorNew(
-                json_string_value(json_object_get(ext_value, "name")),
-                METEO_SENSOR_DS18B20
-            );
-            strncpy(sensor->ds18b20.id, json_string_value(json_object_get(ext_value, "id")), SHORT_STR_LEN);
-        } else {
-            Log(LOG_TYPE_INFO, "CONFIGS", "Invalid meteo sensor type");
-            return false;
-        }
-
-        MeteoSensorAdd(sensor);
-
-        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Meteo sensor name: \"%s\" type: \"%s\"",
-            sensor->name, json_string_value(json_object_get(ext_value, "type")));
-    }
-
-    /**
-     * Reading Socket configs
-     */
-
-    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Socket controller");
-
-    json_array_foreach(json_object_get(data, "socket"), ext_index, ext_value) {
-        json_t *jgpio = json_object_get(ext_value, "gpio");
-
-        GpioPin *button = GpioPinGet(json_string_value(json_object_get(jgpio, "button")));
-        if (button == NULL) {
-            json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Socket button gpio not found");
-            return false;
-        }
-
-        GpioPin *relay = GpioPinGet(json_string_value(json_object_get(jgpio, "relay")));
-        if (relay == NULL) {
-            json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Socket relay gpio not found");
-            return false;
-        }
-
-         Socket *socket = SocketNew(
-            json_string_value(json_object_get(ext_value, "name")),
-            button,
-            relay
-        );
-
-        SocketAdd(socket);
-
-        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Socket name: \"%s\"", socket->name);
     }
 
     json_decref(data);

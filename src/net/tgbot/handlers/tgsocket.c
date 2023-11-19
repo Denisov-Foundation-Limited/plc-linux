@@ -18,6 +18,12 @@
 #include <net/tgbot/tgmenu.h>
 #include <utils/log.h>
 
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
 void TgSocketSelectProcess(const char *token, unsigned from, const char *message)
 {
     json_t      *buttons = json_array();

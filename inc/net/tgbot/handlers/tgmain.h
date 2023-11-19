@@ -13,6 +13,13 @@
 
 #include <stdbool.h>
 
+/**
+ * @brief Process Main Menu commands
+ * 
+ * @param token Telegram Bot uniq token
+ * @param from From user id
+ * @param message Telegram message 
+ */
 void TgMainProcess(const char *token, unsigned from, const char *message);
 
 #endif /* __TG_MAIN_H__ */

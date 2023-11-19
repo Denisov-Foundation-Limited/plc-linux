@@ -10,7 +10,7 @@
 
 #include <string.h>
 
-#include <utils/configs.h>
+#include <utils/configs/configs.h>
 #include <utils/utils.h>
 #include <utils/log.h>
 #include <controllers/controllers.h>

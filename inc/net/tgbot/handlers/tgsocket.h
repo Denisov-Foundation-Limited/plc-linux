@@ -13,8 +13,22 @@
 
 #include <stdbool.h>
 
+/**
+ * @brief Process Socket selection Menu commands
+ * 
+ * @param token Telegram Bot uniq token
+ * @param from From user id
+ * @param message Telegram message 
+ */
 void TgSocketSelectProcess(const char *token, unsigned from, const char *message);
 
+/**
+ * @brief Process Socket Menu commands
+ * 
+ * @param token Telegram Bot uniq token
+ * @param from From user id
+ * @param message Telegram message 
+ */
 void TgSocketProcess(const char *token, unsigned from, const char *message);
 
 #endif /* __TG_SOCKET_H__ */
