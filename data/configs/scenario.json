@@ -1,0 +1,6 @@
+{
+    "scenario": [
+        { "type": "inhome",  "unit": 0, "ctrl": "socket", "socket": { "name": "Лампа", "status": true  } },
+        { "type": "outhome", "unit": 0, "ctrl": "socket", "socket": { "name": "Лампа", "status": false } }
+    ]
+}

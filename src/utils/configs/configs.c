@@ -28,6 +28,7 @@
 #include <net/tgbot/tgmenu.h>
 #include <db/database.h>
 #include <stack/stack.h>
+#include <scenario/scenario.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -203,11 +204,6 @@ static bool ControllersRead(const char *path)
 {
     char            full_path[STR_LEN];
     json_error_t    error;
-    size_t          ext_index;
-    json_t          *ext_value;
-    char            err[ERROR_STR_LEN];
-    Database        db;
-    GpioPin         *gpio = NULL;
 
     snprintf(full_path, STR_LEN, "%s%s", path, CONFIGS_CONTROLLERS_FILE);
 
@@ -315,6 +311,49 @@ static bool PlcRead(const char *path)
     return true;
 }
 
+static bool ScenarioRead(const char *path)
+{
+    char            full_path[STR_LEN];
+    json_error_t    error;
+    char            err[ERROR_STR_LEN];
+    size_t          index;
+    json_t          *value;
+
+    snprintf(full_path, STR_LEN, "%s%s", path, CONFIGS_SCENARIO_FILE);
+
+    json_t *data = json_load_file(full_path, 0, &error);
+    if (!data) {
+        return false;
+    }
+
+    json_array_foreach(json_object_get(data, "scenario"), index, value) {
+        Scenario *scenario = (Scenario *)malloc(sizeof(Scenario));
+
+        scenario->unit = json_integer_value(json_object_get(value, "unit"));
+
+        if (!strcmp(json_string_value(json_object_get(value, "type")), "inhome")) {
+            scenario->type = SCENARIO_IN_HOME;
+        } else if (!strcmp(json_string_value(json_object_get(value, "type")), "outhome")) {
+            scenario->type = SCENARIO_OUT_HOME;
+        } else {
+            Log(LOG_TYPE_ERROR, "CONFIGS", "Invalid scenario type");
+            return false;
+        }
+
+        if (!strcmp(json_string_value(json_object_get(value, "ctrl")), "socket")) {
+            json_t *jsocket = json_object_get(value, "socket");
+            strncpy(scenario->socket.name, json_string_value(json_object_get(jsocket, "name")), SHORT_STR_LEN);
+            scenario->socket.status = json_boolean_value(json_object_get(jsocket, "status"));
+            scenario->ctrl = SECURITY_CTRL_SOCKET;
+        }
+
+        ScenarioAdd(scenario);
+    }
+
+    json_decref(data);
+    return true;
+}
+
 /*********************************************************************/
 /*                                                                   */
 /*                          PUBLIC FUNCTIONS                         */
@@ -342,6 +381,11 @@ bool ConfigsRead(const char *path)
 
     if (!PlcRead(path)) {
         Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load PLC configs");
+        return false;
+    }
+
+    if (!ScenarioRead(path)) {
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load Scenario configs");
         return false;
     }
 

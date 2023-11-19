@@ -18,6 +18,7 @@
 #include <controllers/socket.h>
 #include <stack/stack.h>
 #include <stack/rpc.h>
+#include <scenario/scenario.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -28,7 +29,6 @@
 static struct _Security {
     GList           *sensors;
     GList           *keys;
-    GList           *scenario;
     GpioPin         *gpio[SECURITY_GPIO_MAX];
     mtx_t           sec_mtx;
     bool            status;
@@ -36,7 +36,6 @@ static struct _Security {
     bool            last_alarm;
     bool            sound[SECURITY_SOUND_MAX];
 } Security = {
-    .scenario = NULL,
     .sensors = NULL,
     .keys = NULL,
     .status = false,
@@ -49,28 +48,6 @@ static struct _Security {
 /*                         PRIVATE FUNCTIONS                         */
 /*                                                                   */
 /*********************************************************************/
-
-static void ScenarioRun(bool status)
-{
-    for (GList *s = Security.scenario; s != NULL; s = s->next) {
-        SecurityScenario *scenario = (SecurityScenario *)s->data;
-
-        if ((scenario->type == SECURITY_SCENARIO_IN && !status) || (scenario->type == SECURITY_SCENARIO_OUT && status)) {
-            if (scenario->ctrl == SECURITY_CTRL_SOCKET) {
-                Socket *socket = SocketGet(scenario->socket.name);
-
-                if (socket == NULL) {
-                    LogF(LOG_TYPE_ERROR, "SECURITY", "Can not find socket \"%s\"", scenario->socket.name);
-                    continue;
-                }
-
-                if (!SocketStatusSet(socket, scenario->socket.status, true)) {
-                    LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to switch socket \"%s\" status", scenario->socket.name);
-                }
-            }
-        }
-    }
-}
 
 static bool StatusSave(SecurityStatusType type, bool status)
 {
@@ -297,8 +274,24 @@ static int KeysThread(void *data)
             OneWireData *data = (OneWireData *)k->data;
 
             if (SecurityKeyCheck(data->value)) {
+                if (!SecurityStatusSet(!SecurityStatusGet(), true)) {
+                    LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to switch security status by iButton");
+                }
+
+                if (SecurityStatusGet()) {
+                    if (!ScenarioStart(SCENARIO_OUT_HOME)) {
+                        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to start scenario OUT_HOME");
+                    }
+                } else {
+                    if (!ScenarioStart(SCENARIO_IN_HOME)) {
+                        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to start scenario IN_HOME");
+                    }
+                }
+
                 LogF(LOG_TYPE_INFO, "SECURITY", "Detected valid key: \"%s\"", data->value);
                 UtilsSecSleep(5);
+
+                break;
             } else {
                 LogF(LOG_TYPE_ERROR, "SECURITY", "Invalid security key: \"%s\"", data->value);
             }
@@ -330,11 +323,6 @@ void SecuritySoundSet(SecuritySound sound, bool status)
     Security.sound[sound] = status;
 }
 
-void SecurityScenarioAdd(SecurityScenario *scenario)
-{
-    Security.scenario = g_list_append(Security.scenario, scenario);
-}
-
 void SecurityGpioSet(SecurityGpio id, GpioPin *gpio)
 {
     Security.gpio[id] = gpio;
@@ -346,9 +334,6 @@ bool SecurityKeyCheck(const char *key)
         SecurityKey *skey = (SecurityKey *)ck->data;
 
         if (!strcmp(key, skey->id)) {
-            if (!SecurityStatusSet(!SecurityStatusGet(), true)) {
-                LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to switch security status by iButton");
-            }
             return true;
         }
     }
@@ -401,8 +386,6 @@ bool SecurityStatusSet(bool status, bool save)
             return false;
         }
     }
-
-    ScenarioRun(status);
 
     return true;
 }

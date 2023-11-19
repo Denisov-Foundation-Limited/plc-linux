@@ -37,11 +37,6 @@
             "alarm": false
         },
 
-        "scenario": [
-            { "type": "in",  "ctrl": "socket", "socket": { "name": "Лампа", "status": true  } },
-            { "type": "out", "ctrl": "socket", "socket": { "name": "Лампа", "status": false } }
-        ],
-
         "sensors": [
             { "name": "Стул", "type": "microwave",  "gpio": "ext-opto-5", "telegram": true, "sms": false, "alarm": false },
             { "name": "Ящик", "type": "reed",       "gpio": "ext-opto-3", "telegram": true, "sms": true,  "alarm": true  }

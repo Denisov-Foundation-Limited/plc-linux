@@ -43,15 +43,6 @@ typedef enum {
 } SecurityGpio;
 
 typedef enum {
-    SECURITY_SCENARIO_IN,
-    SECURITY_SCENARIO_OUT
-} SecurityScenarioType;
-
-typedef enum {
-    SECURITY_CTRL_SOCKET
-} SecurityScenarioCtrl;
-
-typedef enum {
     SECURITY_SOUND_ENTER,
     SECURITY_SOUND_EXIT,
     SECURITY_SOUND_ALARM,
@@ -74,17 +65,6 @@ typedef struct {
     unsigned            counter;
 } SecuritySensor;
 
-typedef struct {
-    char    name[SHORT_STR_LEN];
-    bool    status;
-} SecurityScenarioSocket;
-
-typedef struct {
-    SecurityScenarioType    type;
-    SecurityScenarioCtrl    ctrl;
-    SecurityScenarioSocket  socket;
-} SecurityScenario;
-
 /**
  * @brief Set security sound status
  * 
@@ -92,13 +72,6 @@ typedef struct {
  * @param status Enabled or disabled status
  */
 void SecuritySoundSet(SecuritySound sound, bool status);
-
-/**
- * @brief Add scenario for in, out or other human actions
- * 
- * @param scenario Actions
- */
-void SecurityScenarioAdd(SecurityScenario *scenario);
 
 /**
  * @brief Check security key for all controllers

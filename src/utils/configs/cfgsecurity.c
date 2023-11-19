@@ -119,32 +119,6 @@ static bool CfgSecurityKeysLoad(json_t *jsecurity)
     return true;
 }
 
-static bool CfgSecurityScenarioLoad(json_t *jsecurity)
-{
-    size_t  ext_index;
-    json_t  *ext_value;
-
-    json_array_foreach(json_object_get(jsecurity, "scenario"), ext_index, ext_value) {
-        SecurityScenario *scenario = (SecurityScenario *)malloc(sizeof(SecurityScenario));
-
-        if (!strcmp(json_string_value(json_object_get(ext_value, "type")), "in")) {
-            scenario->type = SECURITY_SCENARIO_IN;
-        } else {
-            scenario->type = SECURITY_SCENARIO_OUT;
-        }
-
-        if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "socket")) {
-            json_t *jsocket = json_object_get(ext_value, "socket");
-            strncpy(scenario->socket.name, json_string_value(json_object_get(jsocket, "name")), SHORT_STR_LEN);
-            scenario->socket.status = json_boolean_value(json_object_get(jsocket, "status"));
-            scenario->ctrl = SECURITY_CTRL_SOCKET;
-        }
-
-        SecurityScenarioAdd(scenario);
-    }
-    return true;
-}
-
 static bool CfgSecuritySoundLoad(json_t *jsecurity)
 {
     json_t *jsound = json_object_get(jsecurity, "sound");
@@ -188,11 +162,6 @@ bool CfgSecurityLoad(json_t *data)
 
     if (!CfgSecurityKeysLoad(jsecurity)) {
         Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load security keys configs");
-        return false;
-    }
-
-    if (!CfgSecurityScenarioLoad(jsecurity)) {
-        Log(LOG_TYPE_INFO, "CONFIGS", "Failed to load security GPIO configs");
         return false;
     }
     

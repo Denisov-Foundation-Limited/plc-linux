@@ -18,6 +18,7 @@
 #define CONFIGS_FACTORY_FILE        "factory.json"
 #define CONFIGS_CONTROLLERS_FILE    "controllers.json"
 #define CONFIGS_PLC_FILE            "plc.json"
+#define CONFIGS_SCENARIO_FILE       "scenario.json"
 
 typedef struct {
     char    board[SHORT_STR_LEN];
