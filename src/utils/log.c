@@ -43,7 +43,7 @@ bool LogSaveToFile(const char *date, const char *msg)
     if (!file) {
         return false;
     }
-    
+
     if (fprintf(file, "%s", msg) < 0) {
         fclose(file);
         return false;
@@ -53,22 +53,34 @@ bool LogSaveToFile(const char *date, const char *msg)
     return true;
 }
 
-static int LogThread(void *data)
+GString *LogMakeMsg(const LogType type, const char *module, const char *msg)
 {
-    LogData *log_data = (LogData *)data;
+    struct tm   *cur_time = UtilsLinuxTimeGet();
+    char        date_str[STR_LEN];
+    GString     *text = g_string_new("");
 
-    mtx_lock(&log_mtx);
+    g_string_append_printf(text, "[%d.%d.%d][%d:%d:%d]",
+        cur_time->tm_year, cur_time->tm_mon, cur_time->tm_mday,
+        cur_time->tm_hour, cur_time->tm_min, cur_time->tm_sec
+    );
 
-    if (!LogSaveToFile(log_data->date_str, log_data->full_msg)) {
-        mtx_unlock(&log_mtx);
-        printf("Failed to save log message to file\n");
-        free(log_data);
-        return -1;
+    g_string_append_printf(text, "[%s]", module);
+
+    switch (type) {
+        case LOG_TYPE_INFO:
+            g_string_append_printf(text, "[INFO] %s\n", msg);
+            break;
+
+        case LOG_TYPE_WARN:
+            g_string_append_printf(text, "[WARN] %s\n", msg);
+            break;
+
+        case LOG_TYPE_ERROR:
+            g_string_append_printf(text, "[ERROR] %s\n", msg);
+            break;
     }
-    free(log_data);
 
-    mtx_unlock(&log_mtx);
-    return 0;
+    return text;
 }
 
 /*********************************************************************/
@@ -84,46 +96,35 @@ void LogPathSet(const char *path)
 
 bool Log(const LogType type, const char *module, const char *msg)
 {
-    
-    char        log_type[SHORT_STR_LEN];
-    char        time_str[SHORT_STR_LEN];
-    char        date_str[SHORT_STR_LEN];
-    char        full_msg[EXT_STR_LEN];
-    long int    s_time;
-    struct      tm *cur_time;
-    thrd_t      th;
-    LogData     *data = (LogData *)malloc(sizeof(LogData));
+    struct tm   *cur_time = UtilsLinuxTimeGet();
+    char        date_str[STR_LEN];
+    GString     *text = NULL;
 
-   s_time = time(NULL);
-   cur_time = localtime(&s_time);
-   cur_time->tm_year += 1900;
-   cur_time->tm_mon += 1;
+    snprintf(date_str, STR_LEN, "%d.%d.%d.log", cur_time->tm_year, cur_time->tm_mon, cur_time->tm_mday);
 
-   snprintf(time_str, SHORT_STR_LEN, "%d:%d:%d", cur_time->tm_hour, cur_time->tm_min, cur_time->tm_sec);
-   snprintf(date_str, SHORT_STR_LEN, "%d.%d.%d", cur_time->tm_year, cur_time->tm_mon, cur_time->tm_mday);
+    text = LogMakeMsg(type, module, msg);
+    printf("%s", text->str);
 
-    switch (type) {
-        case LOG_TYPE_INFO:
-            strncpy(log_type, "INFO", SHORT_STR_LEN);
-            break;
-
-        case LOG_TYPE_WARN:
-            strncpy(log_type, "WARN", SHORT_STR_LEN);
-            break;
-
-        case LOG_TYPE_ERROR:
-            strncpy(log_type, "ERROR", SHORT_STR_LEN);
-            break;
+    mtx_lock(&log_mtx);
+    if (!LogSaveToFile(date_str, text->str)) {
+        mtx_unlock(&log_mtx);
+        printf("Failed to save log message to file\n");
+        g_string_free(text, true);
+        return -1;
     }
+    mtx_unlock(&log_mtx);
+    g_string_free(text, true);
 
-#pragma GCC diagnostic ignored "-Wformat-truncation"
-    snprintf(data->full_msg, EXT_STR_LEN, "[%s][%s][%s][%s] %s\n", date_str, time_str, log_type, module, msg);
-#pragma GCC diagnostic pop
+    return true;
+}
 
-    printf("%s", data->full_msg);
+bool LogPrint(const LogType type, const char *module, const char *msg)
+{
+    GString *text = NULL;
 
-    snprintf(data->date_str, SHORT_STR_LEN, "%d-%d-%d", cur_time->tm_year, cur_time->tm_mon, cur_time->tm_mday);
-    thrd_create(&th, LogThread, (void *)data);
+    text = LogMakeMsg(type, module, msg);
+    printf("%s", text->str);
+    g_string_free(text, true);
 
     return true;
 }

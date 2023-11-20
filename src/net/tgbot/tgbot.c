@@ -202,6 +202,7 @@ bool TgBotStart()
     }
 
     thrd_create(&th, &TelegramThread, NULL);
+    thrd_detach(th);
 
     return true;
 }

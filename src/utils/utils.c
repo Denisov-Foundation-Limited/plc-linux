@@ -58,3 +58,16 @@ void UtilsMsecSleep(unsigned msec)
 {
     thrd_sleep(&(struct timespec){ .tv_nsec = msec * 1000000 }, NULL);
 }
+
+struct tm *UtilsLinuxTimeGet()
+{
+    long int    s_time;
+    struct tm   *cur_time;
+
+    s_time = time(NULL);
+    cur_time = localtime(&s_time);
+    cur_time->tm_year += 1900;
+    cur_time->tm_mon += 1;
+
+    return cur_time;
+}

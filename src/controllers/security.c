@@ -55,11 +55,8 @@ static bool StatusSave(SecurityStatusType type, bool status)
     char        sql[STR_LEN];
     char        con[STR_LEN];
 
-    mtx_lock(&Security.sec_mtx);
-
     if (!DatabaseOpen(&db, SECURITY_DB_FILE)) {
         DatabaseClose(&db);
-        mtx_unlock(&Security.sec_mtx);
         Log(LOG_TYPE_ERROR, "SECURITY", "Failed to load Security database");
         return false;
     }
@@ -72,14 +69,25 @@ static bool StatusSave(SecurityStatusType type, bool status)
 
     if (!DatabaseUpdate(&db, "security", sql, "name=\"controller\"")) {
         DatabaseClose(&db);
-        mtx_unlock(&Security.sec_mtx);
         Log(LOG_TYPE_ERROR, "SECURITY", "Failed to update Security database");
         return false;
     }
 
     DatabaseClose(&db);
-    mtx_unlock(&Security.sec_mtx);
     return true;
+}
+
+static int StatusSaveThread(void *data)
+{
+    mtx_lock(&Security.sec_mtx);
+
+    if (!StatusSave(SECURITY_SAVE_TYPE_STATUS, SecurityStatusGet())) {
+        mtx_unlock(&Security.sec_mtx);
+        return -1;
+    }
+
+    mtx_unlock(&Security.sec_mtx);
+    return 0;
 }
 
 static void AlarmHandler()
@@ -119,7 +127,7 @@ static int BuzzerThread(void *data)
     return 0;
 }
 
-static int NotifyStatusThread(void *data)
+static int StatusNotifyThread(void *data)
 {
     char    msg[STR_LEN];
 
@@ -251,10 +259,8 @@ static int KeysThread(void *data)
                 Log(LOG_TYPE_ERROR, "SECURITY", "Failed to read iButton codes");
             }
 
-            if (cur_keys != NULL) {
-                g_list_free(cur_keys);
-                cur_keys = NULL;
-            }
+            g_list_free(cur_keys);
+            cur_keys = NULL;
 
             UtilsSecSleep(1);
             continue;
@@ -296,15 +302,11 @@ static int KeysThread(void *data)
                 LogF(LOG_TYPE_ERROR, "SECURITY", "Invalid security key: \"%s\"", data->value);
             }
 
-            if (data != NULL) {
-                free(data);
-            }
+            free(data);
         }
 
-        if (cur_keys != NULL) {
-            g_list_free(cur_keys);
-            cur_keys = NULL;
-        }
+         g_list_free(cur_keys);
+        cur_keys = NULL;
 
         UtilsSecSleep(1);
     }
@@ -348,16 +350,18 @@ bool SecurityControllerStart()
     Log(LOG_TYPE_INFO, "SECURITY", "Starting Security controller");
 
     thrd_create(&sens_th, &SensorsThread, NULL);
+    thrd_detach(sens_th);
     thrd_create(&keys_th, &KeysThread, NULL);
+    thrd_detach(keys_th);
     thrd_create(&alrm_th, &AlarmThread, NULL);
+    thrd_detach(alrm_th);
 
     return true;
 }
 
 bool SecurityStatusSet(bool status, bool save)
 {
-    thrd_t  bzr_th;
-    thrd_t  ntf_th;
+    thrd_t  bzr_th, ntf_th, save_th;
 
     Security.status = status;
 
@@ -379,12 +383,13 @@ bool SecurityStatusSet(bool status, bool save)
     }
 
     thrd_create(&bzr_th, &BuzzerThread, NULL);
-    thrd_create(&ntf_th, &NotifyStatusThread, NULL);
+    thrd_detach(bzr_th);
+    thrd_create(&ntf_th, &StatusNotifyThread, NULL);
+    thrd_detach(ntf_th);
 
     if (save) {
-        if (!StatusSave(SECURITY_SAVE_TYPE_STATUS, status)) {
-            return false;
-        }
+        thrd_create(&save_th, &StatusSaveThread, NULL);
+        thrd_detach(save_th);
     }
 
     return true;

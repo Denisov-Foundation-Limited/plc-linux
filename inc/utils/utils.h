@@ -51,4 +51,11 @@ void UtilsSecSleep(unsigned sec);
  */
 void UtilsMsecSleep(unsigned msec);
 
+/**
+ * @brief Get current Linux time
+ * 
+ * @return Linux time
+ */
+struct tm *UtilsLinuxTimeGet();
+
 #endif /* __UTILS_H__ */

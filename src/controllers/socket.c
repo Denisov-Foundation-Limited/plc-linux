@@ -40,11 +40,8 @@ static bool StatusSave(const char *name, bool status)
     char        sql[STR_LEN];
     char        con[STR_LEN];
 
-    mtx_lock(&Sockets.db_mtx);
-
     if (!DatabaseOpen(&db, SOCKET_DB_FILE)) {
         DatabaseClose(&db);
-        mtx_unlock(&Sockets.db_mtx);
         Log(LOG_TYPE_ERROR, "SOCKET", "Failed to load Socket database");
         return false;
     }
@@ -54,14 +51,27 @@ static bool StatusSave(const char *name, bool status)
 
     if (!DatabaseUpdate(&db, "socket", sql, con)) {
         DatabaseClose(&db);
-        mtx_unlock(&Sockets.db_mtx);
         Log(LOG_TYPE_ERROR, "SOCKET", "Failed to update Socket database");
         return false;
     }
 
     DatabaseClose(&db);
-    mtx_unlock(&Sockets.db_mtx);
     return true;
+}
+
+static int StatusSaveThread(void *data)
+{
+    Socket *sock = (Socket *)data;
+
+    mtx_lock(&Sockets.db_mtx);
+
+    if (!StatusSave(sock->name, sock->status)) {
+        mtx_unlock(&Sockets.db_mtx);
+        return -1;
+    }
+
+    mtx_unlock(&Sockets.db_mtx);
+    return 0;
 }
 
 static int SocketThread(void *data)
@@ -110,6 +120,8 @@ bool SocketControllerStart()
     Log(LOG_TYPE_INFO, "SOCKET", "Starting Socket controller");
 
     thrd_create(&sock_th, &SocketThread, NULL);
+    thrd_detach(sock_th);
+
     return true;
 }
 
@@ -136,6 +148,8 @@ Socket *SocketGet(const char *name)
 
 bool SocketStatusSet(Socket *sock, bool status, bool save)
 {
+    thrd_t  save_th;
+
     sock->status = status;
 
     GpioPinWrite(sock->gpio[SOCKET_PIN_RELAY], status);
@@ -147,9 +161,8 @@ bool SocketStatusSet(Socket *sock, bool status, bool save)
     }
 
     if (save) {
-        if (!StatusSave(sock->name, status)) {
-            return false;
-        }
+        thrd_create(&save_th, &StatusSaveThread, (void *)sock);
+        thrd_detach(save_th);
     }
 
     return true;

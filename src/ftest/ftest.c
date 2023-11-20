@@ -36,18 +36,18 @@ static int TestThread(void *data)
     bool    dev_found = false;
     GList   *devices = NULL;
 
-    Log(LOG_TYPE_INFO, "FTEST", "Starting FTest");
+   LogPrint(LOG_TYPE_INFO, "FTEST", "Starting FTest");
 
     for (;;) {
-        Log(LOG_TYPE_INFO, "FTEST", "=========================================================================");
-        Log(LOG_TYPE_INFO, "FTEST", "FACTORY TEST");
-        Log(LOG_TYPE_INFO, "FTEST", "");
+        LogPrint(LOG_TYPE_INFO, "FTEST", "=========================================================================");
+        LogPrint(LOG_TYPE_INFO, "FTEST", "FACTORY TEST");
+        LogPrint(LOG_TYPE_INFO, "FTEST", "");
 
         /**
          * GPIO test
          */
 
-        Log(LOG_TYPE_INFO, "FTEST", "GPIO TEST:");
+        LogPrint(LOG_TYPE_INFO, "FTEST", "GPIO TEST:");
 
         GList **gpios = GpioPinsGet();
         for (GList *p = *gpios; p != NULL; p = p->next) {
@@ -78,12 +78,12 @@ static int TestThread(void *data)
                     break;
             }
 
-            LogF(LOG_TYPE_INFO, "FTEST", "\t\tRead GPIO name: \"%s\"\ttype: \"%s\"\tstate \"%s\"", pin->name, gpio_type, gpio_value);
+           LogPrintF(LOG_TYPE_INFO, "FTEST", "\t\tRead GPIO name: \"%s\"\ttype: \"%s\"\tstate \"%s\"", pin->name, gpio_type, gpio_value);
         }
 
         last_state = !last_state;
 
-        Log(LOG_TYPE_INFO, "FTEST", "");
+        LogPrint(LOG_TYPE_INFO, "FTEST", "");
         for (GList *p = *gpios; p != NULL; p = p->next) {
             GpioPin *pin = (GpioPin *)p->data;
 
@@ -104,15 +104,15 @@ static int TestThread(void *data)
             GpioPinWrite(pin, last_state);
 
             strncpy(gpio_type, "DIGITAL", SHORT_STR_LEN);
-            LogF(LOG_TYPE_INFO, "FTEST", "\t\tWrite GPIO name: \"%s\"\ttype: \"%s\"\tstate \"%s\"", pin->name, gpio_type, gpio_value);
+            LogPrintF(LOG_TYPE_INFO, "FTEST", "\t\tWrite GPIO name: \"%s\"\ttype: \"%s\"\tstate \"%s\"", pin->name, gpio_type, gpio_value);
         }
 
         /**
          * LCD test
          */
 
-        Log(LOG_TYPE_INFO, "FTEST", "");
-        Log(LOG_TYPE_INFO, "FTEST", "LCD TEST:");
+        LogPrint(LOG_TYPE_INFO, "FTEST", "");
+        LogPrint(LOG_TYPE_INFO, "FTEST", "LCD TEST:");
 
         strncpy(lcd_text[0], "  FACTORY TEST", SHORT_STR_LEN);
         strncpy(lcd_text[1], "  DISPLAY TEST", SHORT_STR_LEN);
@@ -127,25 +127,25 @@ static int TestThread(void *data)
             LcdPosSet(lcd, 1, 0);
             LcdPrint(lcd, lcd_text[1]);
 
-            LogF(LOG_TYPE_INFO, "FTEST", "\t\tDisplay name: \"%s\" row[0]: \"%s\" row[1]: \"%s\"", lcd->name, lcd_text[0], lcd_text[1]);
+           LogPrintF(LOG_TYPE_INFO, "FTEST", "\t\tDisplay name: \"%s\" row[0]: \"%s\" row[1]: \"%s\"", lcd->name, lcd_text[0], lcd_text[1]);
         }
 
         /**
          * OneWire test
          */
 
-        Log(LOG_TYPE_INFO, "FTEST", "");
-        Log(LOG_TYPE_INFO, "FTEST", "1-WIRE TEST:");
+       LogPrint(LOG_TYPE_INFO, "FTEST", "");
+       LogPrint(LOG_TYPE_INFO, "FTEST", "1-WIRE TEST:");
 
-        if (!OneWireDevicesList(&devices)) {
-            LogF(LOG_TYPE_INFO, "FTEST", "\t\tFailed to read 1-Wire devices list");
+       if (!OneWireDevicesList(&devices)) {
+           LogPrintF(LOG_TYPE_INFO, "FTEST", "\t\tFailed to read 1-Wire devices list");
         } else {
             if (devices != NULL) {
                 for (GList *d = devices; d != NULL; d = d->next) {
                     OneWireData *data = (OneWireData *)d->data;
                     dev_found = true;
 
-                    LogF(LOG_TYPE_INFO, "FTEST", "\t\tDevice detected: \"%s\"", data->value);
+                   LogPrintF(LOG_TYPE_INFO, "FTEST", "\t\tDevice detected: \"%s\"", data->value);
 
                     free(data);
                 }
@@ -153,15 +153,13 @@ static int TestThread(void *data)
         }
 
         if (!dev_found) {
-            Log(LOG_TYPE_INFO, "FTEST", "\t\tDevices not found");
+           LogPrint(LOG_TYPE_INFO, "FTEST", "\t\tDevices not found");
         }
 
-        if (devices != NULL) {
-            g_list_free(devices);
-            devices = NULL;
-        }
+        g_list_free(devices);
+        devices = NULL;
 
-        thrd_sleep(&(struct timespec){ .tv_sec = 1 }, NULL);
+        UtilsSecSleep(1);
     }
 
     return 0;

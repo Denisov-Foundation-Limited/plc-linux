@@ -120,16 +120,6 @@ void WebServerCredsSet(const char *host, unsigned port)
 
 bool WebServerStart()
 {
-    /*thrd_t  th;
-    int     res;
-
-    thrd_create(th, &WebServerThread, NULL);
-    thrd_join(th, &res);
-
-    if (res < 0) {
-        return false;
-    }*/
-
     int     socketId = 0;
     char    full_path[EXT_STR_LEN];
 

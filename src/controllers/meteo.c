@@ -100,6 +100,8 @@ bool MeteoControllerStart()
     Log(LOG_TYPE_INFO, "METEO", "Starting Meteo controller");
 
     thrd_create(&sens_th, &SensorsThread, NULL);
+    thrd_detach(sens_th);
+
     return true;
 }
 

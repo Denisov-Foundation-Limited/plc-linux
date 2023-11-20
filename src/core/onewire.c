@@ -39,9 +39,7 @@ bool OneWireDevicesList(GList **devices)
             *devices = g_list_append(*devices, (void *)data);
         }
 
-        if (parts != NULL) {
-            g_strfreev(parts);
-        }
+        g_strfreev(parts);
     }
 
     g_dir_close(dir);
@@ -71,9 +69,7 @@ bool OneWireKeysRead(GList **keys)
             }
         }
 
-        if (parts != NULL) {
-            g_strfreev(parts);
-        }
+        g_strfreev(parts);
     }
 
     g_dir_close(dir);

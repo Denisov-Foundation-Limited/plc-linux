@@ -83,6 +83,7 @@ bool LcdAdd(const LCD *lcd)
     thrd_t  th;
 
     thrd_create(&th, &LcdInitThread, (void *)lcd);
+    thrd_detach(th);
 
     return true;
 }
