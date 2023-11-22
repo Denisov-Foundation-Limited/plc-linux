@@ -42,8 +42,12 @@ void TgSecurityProcess(const char *token, unsigned from, const char *message)
         if (!RpcSecurityStatusSet(RPC_DEFAULT_UNIT, false)) {
             LogF(LOG_TYPE_ERROR, "TGSECURITY", "Failed to disable security status for user \"%d\"", from);
         }
-    } else if (!strcmp(message, "Сирена")) {
+    } else if (!strcmp(message, "Сирена Включить")) {
         if (!RpcSecurityAlarmSet(RPC_DEFAULT_UNIT, true)) {
+           LogF(LOG_TYPE_ERROR, "TGSECURITY", "Failed to enable security siren for user \"%d\"", from);
+        }
+    } else if (!strcmp(message, "Сирена Отключить")) {
+        if (!RpcSecurityAlarmSet(RPC_DEFAULT_UNIT, false)) {
            LogF(LOG_TYPE_ERROR, "TGSECURITY", "Failed to enable security siren for user \"%d\"", from);
         }
     }
@@ -67,9 +71,11 @@ void TgSecurityProcess(const char *token, unsigned from, const char *message)
 
     if (RpcSecurityAlarmGet(RPC_DEFAULT_UNIT, &alarm)) {
         if (alarm) {
-            text = g_string_append(text, "Работает</b>\n");
+            text = g_string_append(text, "Работает</b>\n\n");
+            TgRespButtonAdd(buttons, "Сирена Отключить");
         } else {
-            text = g_string_append(text, "Отключена</b>\n");
+            text = g_string_append(text, "Отключена</b>\n\n");
+            TgRespButtonAdd(buttons, "Сирена Включить");
         }
     } else {
         text = g_string_append(text, "Ошибка</b>\n\n");
@@ -81,7 +87,7 @@ void TgSecurityProcess(const char *token, unsigned from, const char *message)
     for (GList *u = units; u != NULL; u = u->next) {
         StackUnit *unit = (StackUnit *)u->data;
 
-        g_string_append_printf(text, "<b>%s</b>\n", unit->name);
+        g_string_append_printf(text, "        <b>%s:</b>\n", unit->name);
 
         if (RpcSecuritySensorsGet(unit->id, &sensors)) {
             for (GList *c = sensors; c != NULL; c = c->next) {
@@ -89,15 +95,15 @@ void TgSecurityProcess(const char *token, unsigned from, const char *message)
 
                 if (sensor->detected) {
                     if (sensor->type == RPC_SECURITY_SENSOR_REED) {
-                        g_string_append_printf(text, "        %s: <b>Открыт</b>\n", sensor->name);
+                        g_string_append_printf(text, "                %s: <b>Открыт</b>\n", sensor->name);
                     } else {
-                        g_string_append_printf(text, "        %s: <b>Движение</b>\n", sensor->name);
+                        g_string_append_printf(text, "                %s: <b>Движение</b>\n", sensor->name);
                     }
                 } else {
                     if (sensor->type == RPC_SECURITY_SENSOR_REED) {
-                        g_string_append_printf(text, "        %s: <b>Закрыт</b>\n", sensor->name);
+                        g_string_append_printf(text, "                %s: <b>Закрыт</b>\n", sensor->name);
                     } else {
-                        g_string_append_printf(text, "        %s: <b>Никого</b>\n", sensor->name);
+                        g_string_append_printf(text, "                %s: <b>Никого</b>\n", sensor->name);
                     }
                 }
 
@@ -112,7 +118,6 @@ void TgSecurityProcess(const char *token, unsigned from, const char *message)
     }
     g_list_free(units);
 
-    TgRespButtonAdd(buttons, "Сирена");
     TgRespButtonsAdd(buttons, 2, line_last);
     TgRespSend(token, from, text->str, buttons);
     g_string_free(text, true);

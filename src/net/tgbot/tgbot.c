@@ -24,6 +24,7 @@
 #include <net/tgbot/handlers/tgsecurity.h>
 #include <net/tgbot/handlers/tgmeteo.h>
 #include <net/tgbot/handlers/tgmain.h>
+#include <net/tgbot/handlers/tgtank.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -76,8 +77,12 @@ static void MessageProcess(unsigned from, const char *message)
                 TgMenuLevelSet(from, TG_MENU_LVL_SECURITY);
             } else if (!strcmp(message, "Метео")) {
                 TgMenuLevelSet(from, TG_MENU_LVL_METEO);
+            } if (!strcmp(message, "Свет")) {
+                TgMenuLevelSet(from, TG_MENU_LVL_LIGHT_SELECT);
             } else if (!strcmp(message, "Розетки")) {
                 TgMenuLevelSet(from, TG_MENU_LVL_SOCKET_SELECT);
+            } else if (!strcmp(message, "Бак")) {
+                TgMenuLevelSet(from, TG_MENU_LVL_TANK_STACK_SELECT);
             }
             break;
 
@@ -87,6 +92,31 @@ static void MessageProcess(unsigned from, const char *message)
                     TgMenuUnitSet(from, StackUnitNameGet(message));
                     TgMenuLevelSet(from, TG_MENU_LVL_SOCKET);
                 }
+            }
+            break;
+
+        case TG_MENU_LVL_LIGHT_SELECT:
+            if (strcmp(message, "Назад")) {
+                if (StackUnitNameCheck(message)) {
+                    TgMenuUnitSet(from, StackUnitNameGet(message));
+                    TgMenuLevelSet(from, TG_MENU_LVL_LIGHT);
+                }
+            }
+            break;
+
+        case TG_MENU_LVL_TANK_STACK_SELECT:
+            if (strcmp(message, "Назад")) {
+                if (StackUnitNameCheck(message)) {
+                    TgMenuUnitSet(from, StackUnitNameGet(message));
+                    TgMenuLevelSet(from, TG_MENU_LVL_TANK_SELECT);
+                }
+            }
+            break;
+
+        case TG_MENU_LVL_TANK_SELECT:
+            if (strcmp(message, "Назад")) {
+                TgMenuDataSet(from, message);
+                TgMenuLevelSet(from, TG_MENU_LVL_TANK);
             }
             break;
     }
@@ -103,6 +133,14 @@ static void MessageProcess(unsigned from, const char *message)
         case TG_MENU_LVL_SOCKET:
             TgSocketProcess(TgBot.token, from, message);
             break;
+        
+        case TG_MENU_LVL_LIGHT_SELECT:
+            TgLightSelectProcess(TgBot.token, from, message);
+            break;
+
+        case TG_MENU_LVL_LIGHT:
+            TgLightProcess(TgBot.token, from, message);
+            break;
 
         case TG_MENU_LVL_SECURITY:
             TgSecurityProcess(TgBot.token, from, message);
@@ -110,6 +148,18 @@ static void MessageProcess(unsigned from, const char *message)
 
         case TG_MENU_LVL_METEO:
             TgMeteoProcess(TgBot.token, from, message);
+            break;
+
+        case TG_MENU_LVL_TANK_STACK_SELECT:
+            TgTankStackSelectProcess(TgBot.token, from, message);
+            break;
+
+        case TG_MENU_LVL_TANK_SELECT:
+            TgTankSelectProcess(TgBot.token, from, message);
+            break;
+
+        case TG_MENU_LVL_TANK:
+            TgTankProcess(TgBot.token, from, message);
             break;
     }
 }

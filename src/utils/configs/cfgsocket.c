@@ -21,8 +21,9 @@
 
 bool CfgSocketLoad(json_t *data)
 {
-    size_t  ext_index;
-    json_t  *ext_value;
+    size_t      ext_index;
+    json_t      *ext_value;
+    SocketGroup grp;
 
     Log(LOG_TYPE_INFO, "CONFIGS", "Add Socket controller");
 
@@ -41,10 +42,17 @@ bool CfgSocketLoad(json_t *data)
             return false;
         }
 
+        if (!strcmp(json_string_value(json_object_get(ext_value, "group")), "light")) {
+            grp = SOCKET_GROUP_LIGHT;
+        } else if (!strcmp(json_string_value(json_object_get(ext_value, "group")), "socket")) {
+            grp = SOCKET_GROUP_SOCKET;
+        }
+
          Socket *socket = SocketNew(
             json_string_value(json_object_get(ext_value, "name")),
             button,
-            relay
+            relay,
+            grp
         );
 
         SocketAdd(socket);

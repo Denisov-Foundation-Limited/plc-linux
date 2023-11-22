@@ -8,45 +8,36 @@
 /*                                                                   */
 /*********************************************************************/
 
-#ifndef __TG_SOCKET_H__
-#define __TG_SOCKET_H__
+#ifndef __TG_TANK_H__
+#define __TG_TANK_H__
 
 #include <stdbool.h>
 
 /**
- * @brief Process Socket selection Menu commands
+ * @brief Process Tank stack unit selection Menu commands
  * 
  * @param token Telegram Bot uniq token
  * @param from From user id
  * @param message Telegram message 
  */
-void TgSocketSelectProcess(const char *token, unsigned from, const char *message);
+void TgTankStackSelectProcess(const char *token, unsigned from, const char *message);
 
 /**
- * @brief Process Socket Menu commands
+ * @brief Process Tank controller selection Menu commands
  * 
  * @param token Telegram Bot uniq token
  * @param from From user id
  * @param message Telegram message 
  */
-void TgSocketProcess(const char *token, unsigned from, const char *message);
+void TgTankSelectProcess(const char *token, unsigned from, const char *message);
 
 /**
- * @brief Process Light selection Menu commands
+ * @brief Process Tank controller Menu commands
  * 
  * @param token Telegram Bot uniq token
  * @param from From user id
  * @param message Telegram message 
  */
-void TgLightSelectProcess(const char *token, unsigned from, const char *message);
+void TgTankProcess(const char *token, unsigned from, const char *message);
 
-/**
- * @brief Process Light Menu commands
- * 
- * @param token Telegram Bot uniq token
- * @param from From user id
- * @param message Telegram message 
- */
-void TgLightProcess(const char *token, unsigned from, const char *message);
-
-#endif /* __TG_SOCKET_H__ */
+#endif /* __TG_TANK_H__ */

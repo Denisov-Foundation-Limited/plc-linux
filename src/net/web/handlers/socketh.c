@@ -61,35 +61,6 @@ static bool HandlerStatusSet(FCGX_Request *req, GList **params)
     return ResponseOkSend(req, root);
 }
 
-static bool HandlerStatusGet(FCGX_Request *req, GList **params)
-{
-    json_t  *root = json_object();
-    bool    status = false;
-    char    name[STR_LEN] = {0};
-    bool    found = false;
-
-    for (GList *p = *params; p != NULL; p = p->next) {
-        UtilsReqParam *param = (UtilsReqParam *)p->data;
-
-        if (!strcmp(param->name, "name")) {
-            strncpy(name, param->value, STR_LEN);
-            found = true;
-        }
-    }
-
-    if (!found) {
-        return ResponseFailSend(req, "SOCKETH", "Socket command ivalid");
-    }
-
-    if (!RpcSocketStatusGet(RPC_DEFAULT_UNIT, name, &status)) {
-        return ResponseFailSend(req, "SOCKETH", "Failed to get socket status");
-    }
-
-    json_object_set_new(root, "status", json_boolean(status));
-
-    return ResponseOkSend(req, root);
-}
-
 static bool HandlerSocketsGet(FCGX_Request *req, GList **params)
 {
     json_t  *root = json_object();
@@ -108,6 +79,16 @@ static bool HandlerSocketsGet(FCGX_Request *req, GList **params)
         json_object_set_new(jsocket, "name", json_string(socket->name));
         json_object_set_new(jsocket, "status", json_boolean(socket->status));
         json_array_append_new(jsockets, jsocket);
+
+        switch (socket->group) {
+            case RPC_SOCKET_GROUP_LIGHT:
+                json_object_set_new(jsocket, "group", json_string("light"));
+                break;
+
+            case RPC_SOCKET_GROUP_SOCKET:
+                json_object_set_new(jsocket, "group", json_string("socket"));
+                break;
+        }
 
         free(socket);
     }
@@ -132,8 +113,6 @@ bool HandlerSocketProcess(FCGX_Request *req, GList **params)
         if (!strcmp(param->name, "cmd")) {
             if (!strcmp(param->value, "status_set")) {
                 return HandlerStatusSet(req, params);
-            } else if (!strcmp(param->value, "status_get")) {
-                return HandlerStatusGet(req, params);
             } else if (!strcmp(param->value, "sockets_get")) {
                 return HandlerSocketsGet(req, params);
             } else {

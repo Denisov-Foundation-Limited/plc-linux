@@ -11,6 +11,7 @@
 #include <controllers/tank.h>
 #include <utils/log.h>
 #include <net/notifier.h>
+#include <db/database.h>
 
 #include <stdlib.h>
 #include <threads.h>
@@ -22,7 +23,8 @@
 /*********************************************************************/
 
 static struct _Tanks {
-    GList *tanks;
+    GList   *tanks;
+    mtx_t   save_mtx;
 } Tanks = {
     .tanks = NULL
 };
@@ -33,6 +35,36 @@ static struct _Tanks {
 /*                                                                   */
 /*********************************************************************/
 
+static int StatusSaveThread(void *data)
+{
+    Database    db;
+    char        sql[STR_LEN];
+    char        con[STR_LEN];
+    Tank        *tank = (Tank *)data;
+
+    mtx_lock(&Tanks.save_mtx);
+
+    if (!DatabaseOpen(&db, TANK_DB_FILE)) {
+        DatabaseClose(&db);
+        Log(LOG_TYPE_ERROR, "TANK", "Failed to load Tank database");
+        return false;
+    }
+
+    snprintf(sql, STR_LEN, "status=%d", (int)tank->status);
+    snprintf(con, STR_LEN, "name=\"%s\"", tank->name);
+
+    if (!DatabaseUpdate(&db, "tank", sql, con)) {
+        DatabaseClose(&db);
+        mtx_unlock(&Tanks.save_mtx);
+        Log(LOG_TYPE_ERROR, "TANK", "Failed to update Tank database");
+        return false;
+    }
+
+    DatabaseClose(&db);
+    mtx_unlock(&Tanks.save_mtx);
+    return 0;
+}
+
 static bool NotifyLevelCheck(Tank *tank, unsigned num)
 {
     for (GList *l = tank->levels; l != NULL; l = l->next) {
@@ -41,8 +73,41 @@ static bool NotifyLevelCheck(Tank *tank, unsigned num)
             return true;
         }
     }
-
     return false;
+}
+
+static void TankLevelProcess(Tank *tank)
+{
+    if (!tank->status) {
+        return;
+    }
+
+    if (tank->level == TANK_LEVEL_PERCENT_MIN) {
+        GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], false);
+        tank->pump = false;
+    } else {
+        GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], true);
+        tank->pump = true;
+    }
+
+    if (tank->level == TANK_LEVEL_PERCENT_MAX) {
+        GpioPinWrite(tank->gpio[TANK_GPIO_VALVE], false);
+        tank->valve = false;
+    } else {
+        GpioPinWrite(tank->gpio[TANK_GPIO_VALVE], true);
+        tank->valve = true;
+    }
+
+    if (NotifyLevelCheck(tank, tank->level)) {
+        char    msg[STR_LEN];
+
+        snprintf(msg, STR_LEN, "БАК+\"%s\":+уровень+воды+%u%%", tank->name,  tank->level);
+        LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water level %u%%", tank->name,  tank->level);
+
+        if (!NotifierTelegramSend(msg)) {
+            Log(LOG_TYPE_ERROR, "TANK", "Failed to send level notify");
+        }
+    }
 }
 
 static int TankLevelsThread(void *data)
@@ -67,19 +132,10 @@ static int TankLevelsThread(void *data)
             }
 
             if (tank->level != level_num) {
-                if (NotifyLevelCheck(tank, level_num)) {
-                    char    msg[STR_LEN];
+                tank->level = level_num;
 
-                    snprintf(msg, STR_LEN, "Бак+\"%s\":+Уровень+воды+%u%%", tank->name, level_num);
-                    LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water level %u%%", tank->name, level_num);
-
-                    if (!NotifierTelegramSend(msg)) {
-                        Log(LOG_TYPE_ERROR, "TANK", "Failed to send level notify");
-                    }
-                }
+                TankLevelProcess(tank);
             }
-
-            tank->level = level_num;
         }
         UtilsSecSleep(1);
     }
@@ -115,11 +171,10 @@ static int TankStatusThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
-TankLevel *TankLevelNew(TankLevelType type, unsigned percent, GpioPin *gpio, bool notify)
+TankLevel *TankLevelNew(unsigned percent, GpioPin *gpio, bool notify)
 {
     TankLevel *level = (TankLevel *)malloc(sizeof(TankLevel));
 
-    level->type = type;
     level->percent = percent;
     level->gpio = gpio;
     level->notify = notify;
@@ -132,21 +187,23 @@ Tank *TankNew(const char *name)
     Tank *tank = (Tank *)malloc(sizeof(Tank));
 
     strncpy(tank->name, name, SHORT_STR_LEN);
-    tank->level = TANK_LEVEL_DEFAULT;
+    tank->level = TANK_LEVEL_PERCENT_DEFAULT;
     tank->levels = NULL;
     tank->status = false;
+    tank->pump = false;
+    tank->valve = false;
 
     return tank;
+}
+
+GList **TanksGet()
+{
+    return &Tanks.tanks;
 }
 
 void TankGpioSet(Tank *tank, TankGpio id, GpioPin *gpio)
 {
     tank->gpio[id] = gpio;
-}
-
-void TankNotifySet(Tank *tank, TankNotify id, bool status)
-{
-    tank->notify[id] = status;
 }
 
 void TankLevelAdd(Tank *tank, TankLevel *level)
@@ -161,7 +218,37 @@ void TankAdd(Tank *tank)
 
 bool TankStatusSet(Tank *tank, bool status, bool save)
 {
-    tank->status = status;
+    thrd_t  save_th;
+
+    if (tank->status != status) {
+        if (status) {
+            LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water control enabled", tank->name);
+        } else {
+            LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water control disabled", tank->name);
+        }
+
+        tank->status = status;
+        GpioPinWrite(tank->gpio[TANK_GPIO_STATUS_LED], status);
+
+        if (save) {
+            thrd_create(&save_th, &StatusSaveThread, (void *)tank);
+            thrd_detach(save_th);
+        }
+
+        TankLevelProcess(tank);
+    }
+    return true;
+}
+
+Tank *TankGet(const char *name)
+{
+    for (GList *t = Tanks.tanks; t != NULL; t = t->next) {
+        Tank *tank = (Tank *)t->data;
+        if (!strcmp(tank->name, name)) {
+            return tank;
+        }
+    }
+    return NULL;
 }
 
 bool TankStatusGet(Tank *tank)
@@ -179,6 +266,32 @@ bool TankControllerStart()
     thrd_detach(lvl_th);
     thrd_create(&sts_th, &TankStatusThread, NULL);
     thrd_detach(sts_th);
+
+    return true;
+}
+
+bool TankPumpSet(Tank *tank, bool status)
+{
+    if (!TankStatusSet(tank, false, true)) {
+        LogF(LOG_TYPE_ERROR, "TANK", "Failed to disable tank \"%s\" status", tank->name);
+        return false;
+    }
+
+    GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], status);
+    tank->pump = status;
+
+    return true;
+}
+
+bool TankValveSet(Tank *tank, bool status)
+{
+    if (!TankStatusSet(tank, false, true)) {
+        LogF(LOG_TYPE_ERROR, "TANK", "Failed to disable tank \"%s\" status", tank->name);
+        return false;
+    }
+
+    GpioPinWrite(tank->gpio[TANK_GPIO_VALVE], status);
+    tank->valve = status;
 
     return true;
 }

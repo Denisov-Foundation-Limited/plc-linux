@@ -7,18 +7,22 @@
                 "id": "",
                 "notify": {
                     "enabled": false,
-                    "threshold": 0
+                    "threshold": {
+                        "temp": 0,
+                        "high": true,
+                        "low": false
+                    }
                 }
             }
         ]
     },
 
     "socket": [
-        { "name": "Лампа",   "gpio": { "button": "ext-opto-1", "relay": "ext-rly10-4" } },
-        { "name": "Свитч 1", "gpio": { "button": "none",       "relay": "ext-rly16-1" } },
-        { "name": "Свитч 2", "gpio": { "button": "none",       "relay": "ext-rly16-2" } },
-        { "name": "Свитч 3", "gpio": { "button": "none",       "relay": "ext-rly10-1" } },
-        { "name": "Свитч 4", "gpio": { "button": "none",       "relay": "ext-rly10-2" } }
+        { "name": "Лампа",   "group": "light",  "gpio": { "button": "ext-opto-1", "relay": "ext-rly10-4" } },
+        { "name": "Свитч 1", "group": "socket", "gpio": { "button": "none",       "relay": "ext-rly16-1" } },
+        { "name": "Свитч 2", "group": "socket", "gpio": { "button": "none",       "relay": "ext-rly16-2" } },
+        { "name": "Свитч 3", "group": "socket", "gpio": { "button": "none",       "relay": "ext-rly10-1" } },
+        { "name": "Свитч 4", "group": "socket", "gpio": { "button": "none",       "relay": "ext-rly10-2" } }
     ],
 
     "security": {
@@ -38,8 +42,8 @@
         },
 
         "sensors": [
-            { "name": "Стул", "type": "microwave",  "gpio": "ext-opto-5", "telegram": true, "sms": false, "alarm": false },
-            { "name": "Ящик", "type": "reed",       "gpio": "ext-opto-3", "telegram": true, "sms": true,  "alarm": true  }
+            { "name": "Стул", "type": "microwave", "gpio": "ext-opto-5", "telegram": true, "sms": false, "alarm": false },
+            { "name": "Ящик", "type": "reed",      "gpio": "ext-opto-3", "telegram": true, "sms": true,  "alarm": true  }
         ],
 
         "keys": [
@@ -71,10 +75,10 @@
             "name": "Теплица1",
             "gpio": "none",
             "time": [
-                { "action": "on",  "day": 0, "hour": 0, "min": 0, "notify": false },
-                { "action": "off", "day": 0, "hour": 0, "min": 0, "notify": false },
-                { "action": "on",  "day": 0, "hour": 0, "min": 0, "notify": false },
-                { "action": "off", "day": 0, "hour": 0, "min": 0, "notify": false }
+                { "status": true,  "day": 0, "hour": 0, "min": 0, "notify": false },
+                { "status": false, "day": 0, "hour": 0, "min": 0, "notify": false },
+                { "status": true,  "day": 0, "hour": 0, "min": 0, "notify": false },
+                { "status": false, "day": 0, "hour": 0, "min": 0, "notify": false }
             ]
         }
     ]

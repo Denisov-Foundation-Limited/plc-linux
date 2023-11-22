@@ -77,13 +77,37 @@ bool RpcMeteoSensorsGet(unsigned unit, GList **sensors);
 /*                                                                   */
 /*********************************************************************/
 
+typedef enum {
+    RPC_SOCKET_GROUP_LIGHT,
+    RPC_SOCKET_GROUP_SOCKET
+} RpcSocketGroup;
+
 typedef struct {
-    char    name[SHORT_STR_LEN];
-    bool    status;
+    char            name[SHORT_STR_LEN];
+    RpcSocketGroup  group;
+    bool            status;
 } RpcSocket;
 
 bool RpcSocketStatusSet(unsigned unit, const char *name, bool status);
-bool RpcSocketStatusGet(unsigned unit, const char *name, bool *status);
 bool RpcSocketsGet(unsigned unit, GList **sockets);
+
+/*********************************************************************/
+/*                                                                   */
+/*                           TANK  FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
+typedef struct {
+    char        name[SHORT_STR_LEN];
+    bool        status;
+    unsigned    level;
+    bool        pump;
+    bool        valve;
+} RpcTank;
+
+bool RpcTankStatusSet(unsigned unit, const char *name, bool status);
+bool RpcTankPumpSet(unsigned unit, const char *name, bool status);
+bool RpcTankValveSet(unsigned unit, const char *name, bool status);
+bool RpcTanksGet(unsigned unit, GList **tanks);
 
 #endif /* __RPC_H__ */

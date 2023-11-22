@@ -175,67 +175,65 @@ static int SensorsThread(void *data)
             timer = 0;
         }
 
-        if (Security.status) {
-            for (GList *s = Security.sensors; s != NULL; s = s->next) {
-                SecuritySensor *sensor = (SecuritySensor *)s->data;
+        for (GList *s = Security.sensors; s != NULL; s = s->next) {
+            SecuritySensor *sensor = (SecuritySensor *)s->data;
 
-                if (sensor->detected) {
-                    continue;
-                }
+            if (sensor->detected) {
+                continue;
+            }
 
-                switch (sensor->type) {
-                    case SECURITY_SENSOR_MICRO_WAVE:
-                        if (!GpioPinRead(sensor->gpio)) {
-                            sensor->counter++;
-                        }
-                        break;
+            switch (sensor->type) {
+                case SECURITY_SENSOR_MICRO_WAVE:
+                    if (!GpioPinRead(sensor->gpio)) {
+                        sensor->counter++;
+                    }
+                    break;
 
-                    case SECURITY_SENSOR_PIR:
-                        if (GpioPinRead(sensor->gpio)) {
-                            sensor->counter++;
-                        }
-                        break;
+                case SECURITY_SENSOR_PIR:
+                    if (GpioPinRead(sensor->gpio)) {
+                        sensor->counter++;
+                    }
+                    break;
 
-                    case SECURITY_SENSOR_REED:
-                        if (!GpioPinRead(sensor->gpio)) {
-                            sensor->detected = true;
-                        }
-                        break;
-                }
-
-                if (timer == SECURITY_SENSOR_TIME_MAX_SEC) {
-                    if (sensor->counter >= SECURITY_DETECTED_TIME_MAX_SEC) {
-                        sensor->counter = 0;
+                case SECURITY_SENSOR_REED:
+                    if (!GpioPinRead(sensor->gpio)) {
                         sensor->detected = true;
+                    }
+                    break;
+            }
+
+            if (timer == SECURITY_SENSOR_TIME_MAX_SEC) {
+                if (sensor->counter >= SECURITY_DETECTED_TIME_MAX_SEC) {
+                    sensor->counter = 0;
+                    sensor->detected = true;
+                } else {
+                    sensor->counter = 0;
+                }
+            }
+
+            if (sensor->detected && Security.status) {
+                LogF(LOG_TYPE_INFO, "SECURITY", "Security sensor \"%s\" detected!", sensor->name);
+
+                if (sensor->alarm && !Security.alarm) {
+                    SecurityAlarmSet(true, true);
+                }
+
+                StackUnit *unit = StackUnitGet(RPC_DEFAULT_UNIT);
+                snprintf(msg, STR_LEN, "ОХРАНА:%s+Обнаружено+проникновение+%s", unit->name, sensor->name);
+
+                if (sensor->sms) {
+                    if (!NotifierSmsSend(msg)) {
+                        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send sms message");
                     } else {
-                        sensor->counter = 0;
+                        Log(LOG_TYPE_INFO, "SECURITY", "Alarm sms was sended to phone");
                     }
                 }
 
-                if (sensor->detected) {
-                    LogF(LOG_TYPE_INFO, "SECURITY", "Security sensor \"%s\" detected!", sensor->name);
-
-                    if (sensor->alarm && !Security.alarm) {
-                        SecurityAlarmSet(true, true);
-                    }
-
-                    StackUnit *unit = StackUnitGet(RPC_DEFAULT_UNIT);
-                    snprintf(msg, STR_LEN, "ОХРАНА:%s+Обнаружено+проникновение+%s", unit->name, sensor->name);
-
-                    if (sensor->sms) {
-                        if (!NotifierSmsSend(msg)) {
-                            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send sms message");
-                        } else {
-                            Log(LOG_TYPE_INFO, "SECURITY", "Alarm sms was sended to phone");
-                        }
-                    }
-
-                    if (sensor->telegram) {
-                        if (!NotifierTelegramSend(msg)) {
-                            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send telegram message");
-                        } else {
-                            Log(LOG_TYPE_INFO, "SECURITY", "Alarm message was sended to telegram");
-                        }
+                if (sensor->telegram) {
+                    if (!NotifierTelegramSend(msg)) {
+                        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send telegram message");
+                    } else {
+                        Log(LOG_TYPE_INFO, "SECURITY", "Alarm message was sended to telegram");
                     }
                 }
             }

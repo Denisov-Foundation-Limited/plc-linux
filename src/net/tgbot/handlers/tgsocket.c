@@ -24,29 +24,43 @@
 /*                                                                   */
 /*********************************************************************/
 
-void TgSocketSelectProcess(const char *token, unsigned from, const char *message)
+static void SocketSelectProcess(RpcSocketGroup group, const char *token, unsigned from, const char *message)
 {
     json_t      *buttons = json_array();
     GList       *units = NULL;
     GList       *sockets = NULL;
     const char  *line_last[] = {"Обновить", "Назад"};
-    GString     *text = g_string_new("<b>РОЗЕТКИ: ВЫБОР ОБЪЕКТА</b>\n\n");
+    GString     *text = g_string_new("");
+    
+    switch (group) {
+        case RPC_SOCKET_GROUP_LIGHT:
+            text = g_string_append(text, "<b>СВЕТ: ВЫБОР ОБЪЕКТА</b>\n\n");
+            break;
+
+        case RPC_SOCKET_GROUP_SOCKET:
+            text = g_string_append(text, "<b>РОЗЕТКИ: ВЫБОР ОБЪЕКТА</b>\n\n");
+            break;
+    }
 
     StackActiveUnitsGet(&units);
 
     for (GList *u = units; u != NULL; u = u->next) {
         StackUnit *unit = (StackUnit *)u->data;
 
-        g_string_append_printf(text, "<b>%s</b>\n", unit->name);
+        g_string_append_printf(text, "<b>%s:</b>\n", unit->name);
+
         if (RpcSocketsGet(unit->id, &sockets)) {
             for (GList *s = sockets; s != NULL; s = s->next) {
                 RpcSocket *socket = (RpcSocket *)s->data;
 
-                if (socket->status) {
-                    g_string_append_printf(text, "        %s: <b>Включен</b>\n", socket->name);
-                } else {
-                    g_string_append_printf(text, "        %s: <b>Отключен</b>\n", socket->name);
+                if (socket->group == group) {
+                    if (socket->status) {
+                        g_string_append_printf(text, "        %s: <b>Включен</b>\n", socket->name);
+                    } else {
+                        g_string_append_printf(text, "        %s: <b>Отключен</b>\n", socket->name);
+                    }
                 }
+
                 free(socket);
             }
             g_list_free(sockets);
@@ -65,7 +79,7 @@ void TgSocketSelectProcess(const char *token, unsigned from, const char *message
     g_string_free(text, true);
 }
 
-void TgSocketProcess(const char *token, unsigned from, const char *message)
+void SocketProcess(RpcSocketGroup group, const char *token, unsigned from, const char *message)
 {
     GList       *sockets = NULL;
     bool        status = false;
@@ -74,18 +88,22 @@ void TgSocketProcess(const char *token, unsigned from, const char *message)
     const char  *line_last[] = {"Обновить", "Назад"};
     GString     *text = g_string_new("");
 
-    g_string_append_printf(text, "<b>РОЗЕТКИ: %s</b>\n", unit->name);
+    switch (group) {
+        case RPC_SOCKET_GROUP_LIGHT:
+            g_string_append_printf(text, "<b>СВЕТ: %s</b>\n", unit->name);
+            break;
+
+        case RPC_SOCKET_GROUP_SOCKET:
+            g_string_append_printf(text, "<b>РОЗЕТКИ: %s</b>\n", unit->name);
+            break;
+    }
 
     if (RpcSocketsGet(unit->id, &sockets)) {
         for (GList *s = sockets; s != NULL; s = s->next) {
             RpcSocket *socket = (RpcSocket *)s->data;
 
             if (!strcmp(socket->name, message)) {
-                if (!RpcSocketStatusGet(unit->id, message, &status)) {
-                    text = g_string_append(text, "<b>Ошибка получения статуса розетки</b>\n\n");
-                    LogF(LOG_TYPE_ERROR, "TGSOCKET", "Failed to get socket status for user %d", from);
-                }
-                if (!RpcSocketStatusSet(unit->id, message, !status)) {
+                if (!RpcSocketStatusSet(unit->id, message, !socket->status)) {
                     text = g_string_append(text, "<b>Ошибка переключения розетки</b>\n\n");
                     LogF(LOG_TYPE_ERROR, "TGSOCKET", "Failed to set socket status for user %d", from);
                 }
@@ -104,12 +122,14 @@ void TgSocketProcess(const char *token, unsigned from, const char *message)
         for (GList *s = sockets; s != NULL; s = s->next) {
             RpcSocket *socket = (RpcSocket *)s->data;
 
-            TgRespButtonAdd(buttons, socket->name);
+            if (socket->group == group) {
+                TgRespButtonAdd(buttons, socket->name);
 
-            if (socket->status) {
-                g_string_append_printf(text, "        %s: <b>Включен</b>\n", socket->name);
-            } else {
-                g_string_append_printf(text, "        %s: <b>Отключен</b>\n", socket->name);
+                if (socket->status) {
+                    g_string_append_printf(text, "        %s: <b>Включен</b>\n", socket->name);
+                } else {
+                    g_string_append_printf(text, "        %s: <b>Отключен</b>\n", socket->name);
+                }
             }
 
             free(socket);
@@ -123,4 +143,24 @@ void TgSocketProcess(const char *token, unsigned from, const char *message)
     TgRespButtonsAdd(buttons, 2, line_last);
     TgRespSend(token, from, text->str, buttons);
     g_string_free(text, true);
+}
+
+void TgSocketSelectProcess(const char *token, unsigned from, const char *message)
+{
+    SocketSelectProcess(RPC_SOCKET_GROUP_SOCKET, token, from, message);
+}
+
+void TgSocketProcess(const char *token, unsigned from, const char *message)
+{
+    SocketProcess(RPC_SOCKET_GROUP_SOCKET, token, from, message);
+}
+
+void TgLightSelectProcess(const char *token, unsigned from, const char *message)
+{
+    SocketSelectProcess(RPC_SOCKET_GROUP_LIGHT, token, from, message);
+}
+
+void TgLightProcess(const char *token, unsigned from, const char *message)
+{
+    SocketProcess(RPC_SOCKET_GROUP_LIGHT, token, from, message);
 }

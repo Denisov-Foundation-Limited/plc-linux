@@ -102,13 +102,14 @@ static int SocketThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
-Socket *SocketNew(const char *name, GpioPin *button, GpioPin *relay)
+Socket *SocketNew(const char *name, GpioPin *button, GpioPin *relay, SocketGroup group)
 {
     Socket *socket = (Socket *)malloc(sizeof(Socket));
 
     strncpy(socket->name, name, SHORT_STR_LEN);
     socket->gpio[SOCKET_PIN_BUTTON] = button;
     socket->gpio[SOCKET_PIN_RELAY] = relay;
+    socket->group = group;
 
     return socket;
 }

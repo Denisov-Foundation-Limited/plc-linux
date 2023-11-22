@@ -254,7 +254,9 @@ bool StackStart()
     thrd_t  stk_th;
 
     Log(LOG_TYPE_INFO, "STACK", "Starting Stack monitoring");
+
     thrd_create(&stk_th, &StackThread, NULL);
+    thrd_detach(stk_th);
 
     return true;
 }

@@ -26,10 +26,16 @@ typedef enum {
     SOCKET_PIN_MAX
 } SocketPin;
 
+typedef enum {
+    SOCKET_GROUP_LIGHT,
+    SOCKET_GROUP_SOCKET
+} SocketGroup;
+
 typedef struct {
-    char    name[SHORT_STR_LEN];
-    GpioPin *gpio[SOCKET_PIN_MAX];
-    bool    status;
+    char        name[SHORT_STR_LEN];
+    GpioPin     *gpio[SOCKET_PIN_MAX];
+    SocketGroup group;
+    bool        status;
 } Socket;
 
 /**
@@ -38,10 +44,11 @@ typedef struct {
  * @param name Name of socket
  * @param button Socket button gpio
  * @param relay Socket relay gpio
+ * @param group Socket group
  * 
  * @return Socket struct
  */
-Socket *SocketNew(const char *name, GpioPin *button, GpioPin *relay);
+Socket *SocketNew(const char *name, GpioPin *button, GpioPin *relay, SocketGroup group);
 
 /**
  * @brief Start socket buttons monitoring

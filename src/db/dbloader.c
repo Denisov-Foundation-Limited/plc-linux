@@ -16,6 +16,7 @@
 #include <utils/log.h>
 #include <controllers/security.h>
 #include <controllers/socket.h>
+#include <controllers/tank.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -122,6 +123,7 @@ static bool DatabaseSocketLoad()
     for (GList *s = *SocketsGet(); s != NULL; s = s->next) {
         Socket *socket = (Socket *)s->data;
         status = 0;
+
         snprintf(sql, STR_LEN, "name=\"%s\"", socket->name);
 
         if (!DatabaseRowExists(&db, "socket", sql, &exists)) {
@@ -144,9 +146,9 @@ static bool DatabaseSocketLoad()
             snprintf(sql, STR_LEN, "\"%s\", %d", socket->name, 0);
         
             if (DatabaseInsert(&db, "socket", "name, status", sql)) {
-                LogF(LOG_TYPE_INFO, "DBLOADER", "Created status for Security controller is \"%d\"", status);
+                LogF(LOG_TYPE_INFO, "DBLOADER", "Created status for Socket controller is \"%d\"", status);
             } else {
-                Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to insert Security controller status");
+                Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to insert Socket controller status");
                 DatabaseClose(&db);
                 return false;
             }
@@ -154,6 +156,71 @@ static bool DatabaseSocketLoad()
 
         if (!SocketStatusSet(socket, (bool)status, false)) {
             LogF(LOG_TYPE_ERROR, "DBLOADER", "Failed to set Socket \"%s\" status", socket->name);
+            DatabaseClose(&db);
+            return false;
+        }
+    }
+
+    DatabaseClose(&db);
+
+    return true;
+}
+
+static bool DatabaseTankLoad()
+{
+    int         status = 0;
+    bool        exists = false;
+    Database    db;
+    char        sql[STR_LEN];
+
+    if (!DatabaseOpen(&db, TANK_DB_FILE)) {
+        DatabaseClose(&db);
+        Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to load Tank database");
+        return false;
+    }
+
+    if (!DatabaseCreate(&db, "tank", "id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, status INTEGER")) {
+        DatabaseClose(&db);
+        Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to create Tank table");
+        return false;
+    }
+
+    for (GList *t = *TanksGet(); t != NULL; t = t->next) {
+        Tank *tank = (Tank *)t->data;
+        status = 0;
+
+        snprintf(sql, STR_LEN, "name=\"%s\"", tank->name);
+
+        if (!DatabaseRowExists(&db, "tank", sql, &exists)) {
+            LogF(LOG_TYPE_ERROR, "DBLOADER", "Failed to check Tank \"%s\" status", tank->name);
+            DatabaseClose(&db);
+            return false;
+        }
+
+        if (exists) {
+            snprintf(sql, STR_LEN, "name=\"%s\"", tank->name);
+
+            if (DatabaseFindOne(&db, "tank", "status", sql, DATABASE_COL_TYPE_INT, (void *)&status)) {
+                LogF(LOG_TYPE_INFO, "DBLOADER", "Loaded status for Tank \"%s\" is \"%d\"", tank->name, status);
+            } else {
+                LogF(LOG_TYPE_ERROR, "DBLOADER", "Failed to find Tank \"%s\" status", tank->name);
+                DatabaseClose(&db);
+                return false;
+            }
+        } else {
+            snprintf(sql, STR_LEN, "\"%s\", %d", tank->name, 0);
+
+            if (DatabaseInsert(&db, "tank", "name, status", sql)) {
+                LogF(LOG_TYPE_INFO, "DBLOADER", "Created status for Tank controller is \"%d\"", status);
+            } else {
+                Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to insert Tank controller status");
+                DatabaseClose(&db);
+                return false;
+            }
+        }
+
+        if (!TankStatusSet(tank, (bool)status, false)) {
+            LogF(LOG_TYPE_ERROR, "DBLOADER", "Failed to set Tank \"%s\" status", tank->name);
             DatabaseClose(&db);
             return false;
         }
@@ -179,6 +246,11 @@ bool DatabaseLoaderLoad()
 
     if (!DatabaseSocketLoad()) {
         Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to load socket states from DB");
+        return false;
+    }
+
+    if (!DatabaseTankLoad()) {
+        Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to load tank states from DB");
         return false;
     }
 

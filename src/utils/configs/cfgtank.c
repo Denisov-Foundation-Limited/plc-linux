@@ -63,8 +63,6 @@ bool CfgTankLoad(json_t *data)
         TankGpioSet(tank, TANK_GPIO_STATUS_BUTTON, button);
 
         json_array_foreach(json_object_get(ext_value, "levels"), index, value) {
-            TankLevelType   type;
-
             GpioPin *sensor = GpioPinGet(json_string_value(json_object_get(value, "gpio")));
             if (sensor == NULL) {
                 Log(LOG_TYPE_ERROR, "CONFIGS", "Tank level gpio not found");
@@ -72,7 +70,6 @@ bool CfgTankLoad(json_t *data)
             }
 
             TankLevel *level = TankLevelNew(
-                type,
                 json_integer_value(json_object_get(value, "percent")),
                 sensor,
                 json_boolean_value(json_object_get(value, "notify"))

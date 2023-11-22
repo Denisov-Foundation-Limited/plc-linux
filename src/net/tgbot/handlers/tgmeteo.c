@@ -37,7 +37,7 @@ void TgMeteoProcess(const char *token, unsigned from, const char *message)
     for (GList *u = units; u != NULL; u = u->next) {
         StackUnit *unit = (StackUnit *)u->data;
 
-        g_string_append_printf(text, "<b>%s</b>\n", unit->name);
+        g_string_append_printf(text, "<b>%s:</b>\n", unit->name);
 
         if (RpcMeteoSensorsGet(unit->id, &sensors)) {
             for (GList *s = sensors; s != NULL; s = s->next) {

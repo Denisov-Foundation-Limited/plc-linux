@@ -119,6 +119,26 @@ void TgMenuBack(unsigned from)
                 case TG_MENU_LVL_METEO:
                     menu->level = TG_MENU_LVL_MAIN;
                     break;
+
+                case TG_MENU_LVL_LIGHT_SELECT:
+                    menu->level = TG_MENU_LVL_MAIN;
+                    break;
+
+                case TG_MENU_LVL_LIGHT:
+                    menu->level = TG_MENU_LVL_LIGHT_SELECT;
+                    break;
+
+                case TG_MENU_LVL_TANK_STACK_SELECT:
+                    menu->level = TG_MENU_LVL_MAIN;
+                    break;
+
+                case TG_MENU_LVL_TANK_SELECT:
+                    menu->level = TG_MENU_LVL_TANK_STACK_SELECT;
+                    break;
+
+                case TG_MENU_LVL_TANK:
+                    menu->level = TG_MENU_LVL_TANK_SELECT;
+                    break;
             }
             break;
         }

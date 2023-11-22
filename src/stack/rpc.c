@@ -10,6 +10,7 @@
 
 #include <stack/rpc.h>
 #include <controllers/security.h>
+#include <controllers/tank.h>
 #include <utils/log.h>
 #include <controllers/meteo.h>
 #include <controllers/socket.h>
@@ -25,6 +26,12 @@
 /*********************************************************************/
 /*                                                                   */
 /*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
+/*********************************************************************/
+/*                                                                   */
+/*                           STACK MANAGMENT                         */
 /*                                                                   */
 /*********************************************************************/
 
@@ -63,6 +70,12 @@ bool RpcUnitStatusCheck(unsigned unit)
     json_decref(root);
     return true;
 }
+
+/*********************************************************************/
+/*                                                                   */
+/*                         SECURITY FUNCTIONS                        */
+/*                                                                   */
+/*********************************************************************/
 
 bool RpcSecurityStatusSet(unsigned unit, bool status)
 {
@@ -298,6 +311,12 @@ bool RpcSecuritySensorsGet(unsigned unit, GList **sensors)
     return true;
 }
 
+/*********************************************************************/
+/*                                                                   */
+/*                           METEO FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
 bool RpcMeteoSensorsGet(unsigned unit, GList **sensors)
 {
     char            buf[BUFFER_LEN_MAX];
@@ -368,6 +387,12 @@ bool RpcMeteoSensorsGet(unsigned unit, GList **sensors)
     return true;
 }
 
+/*********************************************************************/
+/*                                                                   */
+/*                         SOCKET  FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
 bool RpcSocketStatusSet(unsigned unit, const char *name, bool status)
 {
     char            buf[BUFFER_LEN_MAX];
@@ -409,49 +434,6 @@ bool RpcSocketStatusSet(unsigned unit, const char *name, bool status)
     return true;
 }
 
-bool RpcSocketStatusGet(unsigned unit, const char *name, bool *status)
-{
-    char            buf[BUFFER_LEN_MAX];
-    char            url[STR_LEN];
-    json_error_t    error;
-
-    if (unit == RPC_DEFAULT_UNIT) {
-        Socket *socket = SocketGet(name);
-        if (socket == NULL) {
-            return false;
-        }
-        *status = SocketStatusGet(socket);
-        return true;
-    }
-
-    StackUnit *u = StackUnitGet(unit);
-    if (u == NULL) {
-        return false;
-    }
-
-    snprintf(url, STR_LEN, "http://%s:%d/api/%s/socket?cmd=status_get&name=%s", u->ip, u->port, SERVER_API_VER, name);
-    memset(buf, 0x0, BUFFER_LEN_MAX);
-
-    if (!WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
-        return false;
-    }
-
-    json_t *root = json_loads(buf, 0, &error);
-    if (root == NULL) {
-        return false;
-    }
-
-    if (!json_boolean_value(json_object_get(root, "result"))) {
-        json_decref(root);
-        return false;
-    }
-
-    *status = json_boolean_value(json_object_get(root, "status"));
-
-    json_decref(root);
-    return true;
-}
-
 bool RpcSocketsGet(unsigned unit, GList **sockets)
 {
     char            buf[BUFFER_LEN_MAX];
@@ -471,6 +453,16 @@ bool RpcSocketsGet(unsigned unit, GList **sockets)
             RpcSocket *s = (RpcSocket *)malloc(sizeof(RpcSocket));
             strncpy(s->name, socket->name, SHORT_STR_LEN);
             s->status = socket->status;
+
+            switch (socket->group) {
+                case SOCKET_GROUP_LIGHT:
+                    s->group = RPC_SOCKET_GROUP_LIGHT;
+                    break;
+
+                case SOCKET_GROUP_SOCKET:
+                    s->group = RPC_SOCKET_GROUP_SOCKET;
+                    break;
+            }
 
             *sockets = g_list_append(*sockets, (void *)s);
         }
@@ -505,7 +497,208 @@ bool RpcSocketsGet(unsigned unit, GList **sockets)
         strncpy(s->name, json_string_value(json_object_get(value, "name")), SHORT_STR_LEN);
         s->status = json_boolean_value(json_object_get(value, "status"));
 
+        if (!strcmp(json_string_value(json_object_get(value, "group")), "light")) {
+            s->group = RPC_SOCKET_GROUP_LIGHT;
+        } else if (!strcmp(json_string_value(json_object_get(value, "group")), "socket")) {
+            s->group = RPC_SOCKET_GROUP_SOCKET;
+        }
+
         *sockets = g_list_append(*sockets, (void *)s);
+    }
+
+    json_decref(root);
+    return true;
+}
+
+/*********************************************************************/
+/*                                                                   */
+/*                           TANK  FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
+bool RpcTankStatusSet(unsigned unit, const char *name, bool status)
+{
+    char            buf[BUFFER_LEN_MAX];
+    char            url[STR_LEN];
+    json_error_t    error;
+
+    if (unit == RPC_DEFAULT_UNIT) {
+        Tank *tank = TankGet(name);
+        if (tank == NULL) {
+            return false;
+        }
+        return TankStatusSet(tank, status, true);
+    }
+
+    StackUnit *u = StackUnitGet(unit);
+    if (u == NULL) {
+        return false;
+    }
+
+    snprintf(url, STR_LEN, "http://%s:%d/api/%s/tank?cmd=status_set&name=%s&status=%s",
+            u->ip, u->port, SERVER_API_VER, name, (status == true) ? "true" : "false");
+    memset(buf, 0x0, BUFFER_LEN_MAX);
+
+    if (!WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
+        return false;
+    }
+
+    json_t *root = json_loads(buf, 0, &error);
+    if (root == NULL) {
+        return false;
+    }
+
+    if (!json_boolean_value(json_object_get(root, "result"))) {
+        json_decref(root);
+        return false;
+    }
+
+    json_decref(root);
+    return true;
+}
+
+bool RpcTanksGet(unsigned unit, GList **tanks)
+{
+    char            buf[BUFFER_LEN_MAX];
+    char            url[STR_LEN];
+    json_error_t    error;
+    size_t          index;
+    json_t          *value;
+
+    if (tanks == NULL) {
+        return false;
+    }
+
+    if (unit == RPC_DEFAULT_UNIT) {
+        for (GList *c = *TanksGet(); c != NULL; c = c->next) {
+            Tank *tank = (Tank *)c->data;
+
+            RpcTank *t = (RpcTank *)malloc(sizeof(RpcTank));
+            strncpy(t->name, tank->name, SHORT_STR_LEN);
+            t->status = tank->status;
+            t->level = tank->level;
+            t->pump = tank->pump;
+            t->valve = tank->valve;
+
+            *tanks = g_list_append(*tanks, (void *)t);
+        }
+        return true;
+    }
+
+    StackUnit *u = StackUnitGet(unit);
+    if (u == NULL) {
+        return false;
+    }
+
+    snprintf(url, STR_LEN, "http://%s:%d/api/%s/tank?cmd=tanks_get", u->ip, u->port, SERVER_API_VER);
+    memset(buf, 0x0, BUFFER_LEN_MAX);
+
+    if (!WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
+        return false;
+    }
+
+    json_t *root = json_loads(buf, 0, &error);
+    if (root == NULL) {
+        return false;
+    }
+
+    if (!json_boolean_value(json_object_get(root, "result"))) {
+        json_decref(root);
+        return false;
+    }
+
+    json_array_foreach(json_object_get(root, "tanks"), index, value) {
+        RpcTank *t = (RpcTank *)malloc(sizeof(RpcTank));
+
+        strncpy(t->name, json_string_value(json_object_get(value, "name")), SHORT_STR_LEN);
+        t->status = json_boolean_value(json_object_get(value, "status"));
+        t->level = json_integer_value(json_object_get(value, "level"));
+        t->pump = json_boolean_value(json_object_get(value, "pump"));
+        t->valve = json_boolean_value(json_object_get(value, "valve"));
+
+        *tanks = g_list_append(*tanks, (void *)t);
+    }
+
+    json_decref(root);
+    return true;
+}
+
+bool RpcTankPumpSet(unsigned unit, const char *name, bool status)
+{
+    char            buf[BUFFER_LEN_MAX];
+    char            url[STR_LEN];
+    json_error_t    error;
+
+    if (unit == RPC_DEFAULT_UNIT) {
+        Tank *tank = TankGet(name);
+        if (tank == NULL) {
+            return false;
+        }
+        return TankPumpSet(tank, status);
+    }
+
+    StackUnit *u = StackUnitGet(unit);
+    if (u == NULL) {
+        return false;
+    }
+
+    snprintf(url, STR_LEN, "http://%s:%d/api/%s/tank?cmd=pump_set&name=%s&status=%s",
+            u->ip, u->port, SERVER_API_VER, name, (status == true) ? "true" : "false");
+    memset(buf, 0x0, BUFFER_LEN_MAX);
+
+    if (!WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
+        return false;
+    }
+
+    json_t *root = json_loads(buf, 0, &error);
+    if (root == NULL) {
+        return false;
+    }
+
+    if (!json_boolean_value(json_object_get(root, "result"))) {
+        json_decref(root);
+        return false;
+    }
+
+    json_decref(root);
+    return true;
+}
+
+bool RpcTankValveSet(unsigned unit, const char *name, bool status)
+{
+    char            buf[BUFFER_LEN_MAX];
+    char            url[STR_LEN];
+    json_error_t    error;
+
+    if (unit == RPC_DEFAULT_UNIT) {
+        Tank *tank = TankGet(name);
+        if (tank == NULL) {
+            return false;
+        }
+        return TankValveSet(tank, status);
+    }
+
+    StackUnit *u = StackUnitGet(unit);
+    if (u == NULL) {
+        return false;
+    }
+
+    snprintf(url, STR_LEN, "http://%s:%d/api/%s/tank?cmd=valve_set&name=%s&status=%s",
+            u->ip, u->port, SERVER_API_VER, name, (status == true) ? "true" : "false");
+    memset(buf, 0x0, BUFFER_LEN_MAX);
+
+    if (!WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
+        return false;
+    }
+
+    json_t *root = json_loads(buf, 0, &error);
+    if (root == NULL) {
+        return false;
+    }
+
+    if (!json_boolean_value(json_object_get(root, "result"))) {
+        json_decref(root);
+        return false;
     }
 
     json_decref(root);
