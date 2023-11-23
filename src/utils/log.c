@@ -56,7 +56,6 @@ bool LogSaveToFile(const char *date, const char *msg)
 GString *LogMakeMsg(const LogType type, const char *module, const char *msg)
 {
     struct tm   *cur_time = UtilsLinuxTimeGet();
-    char        date_str[STR_LEN];
     GString     *text = g_string_new("");
 
     g_string_append_printf(text, "[%d.%d.%d][%d:%d:%d]",

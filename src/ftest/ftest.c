@@ -73,7 +73,7 @@ static int TestThread(void *data)
 
                 case GPIO_TYPE_ANALOG:
                     val = GpioPinReadA(pin);
-                    snprintf(gpio_value, STR_LEN, "%d", val);
+                    snprintf(gpio_value, SHORT_STR_LEN, "%d", val);
                     strncpy(gpio_type, "ANALOG", SHORT_STR_LEN);
                     break;
             }

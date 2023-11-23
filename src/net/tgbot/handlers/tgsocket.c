@@ -82,7 +82,6 @@ static void SocketSelectProcess(RpcSocketGroup group, const char *token, unsigne
 void SocketProcess(RpcSocketGroup group, const char *token, unsigned from, const char *message)
 {
     GList       *sockets = NULL;
-    bool        status = false;
     json_t      *buttons = json_array();
     StackUnit   *unit = TgMenuUnitGet(from);
     const char  *line_last[] = {"Обновить", "Назад"};

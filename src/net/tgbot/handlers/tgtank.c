@@ -86,7 +86,6 @@ void TgTankStackSelectProcess(const char *token, unsigned from, const char *mess
 void TgTankSelectProcess(const char *token, unsigned from, const char *message)
 {
     json_t      *buttons = json_array();
-    GList       *units = NULL;
     GList       *tanks = NULL;
     StackUnit   *unit = TgMenuUnitGet(from);
     GString     *text = g_string_new("");

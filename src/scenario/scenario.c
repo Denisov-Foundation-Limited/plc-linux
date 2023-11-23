@@ -39,7 +39,7 @@ bool ScenarioStart(ScenarioType type)
         if (scenario->type == type) {
             if (scenario->ctrl == SECURITY_CTRL_SOCKET) {
                 if (!RpcSocketStatusSet(scenario->unit, scenario->socket.name, scenario->socket.status)) {
-                    LogF(LOG_TYPE_ERROR, "SCENARIO", "Failed to switch socket \"%s\" status for unit \"%s\"", scenario->socket.name, scenario->unit);
+                    LogF(LOG_TYPE_ERROR, "SCENARIO", "Failed to switch socket \"%s\" status for unit \"%u\"", scenario->socket.name, scenario->unit);
                 }
             }
         }

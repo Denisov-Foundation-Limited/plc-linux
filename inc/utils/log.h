@@ -51,10 +51,10 @@ bool Log(const LogType type, const char *module, const char *msg);
  * 
  * @return true/false as result of saving message to disk
  */
-#define LogF(type, module, args...) \
+#define LogF(type, module, ...) \
     do { \
         GString *msg = g_string_new(""); \
-        g_string_append_printf(msg, ##args); \
+        g_string_append_printf(msg, __VA_ARGS__); \
         Log(type, module, msg->str); \
         g_string_free(msg, true); \
     } while(0)
@@ -79,10 +79,10 @@ bool LogPrint(const LogType type, const char *module, const char *msg);
  * 
  * @return true/false as result of saving message to disk
  */
-#define LogPrintF(type, module, args...) \
+#define LogPrintF(type, module, ...) \
     do { \
         GString *msg = g_string_new(""); \
-        g_string_append_printf(msg, ##args); \
+        g_string_append_printf(msg, __VA_ARGS__); \
         LogPrint(type, module, msg->str); \
         g_string_free(msg, true); \
     } while(0)

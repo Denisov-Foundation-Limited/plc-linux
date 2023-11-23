@@ -15,7 +15,11 @@
 #include <jansson.h>
 
 bool TgRespSend(const char *token, unsigned id, const char *text, json_t *buttons);
+
 void TgRespButtonAdd(json_t *buttons, const char *name);
+
 void TgRespButtonsAdd(json_t *buttons, unsigned count, const char *name[]);
+
+bool TgPhotoRespSend(const char *token, unsigned id, const char *photo, const char *caption);
 
 #endif /* __TG_RESP_H__ */

@@ -26,7 +26,7 @@ void TgMainProcess(const char *token, unsigned from, const char *message)
 {
     json_t      *buttons = json_array();
     const char  *line0[] = { "Я дома", "Ушёл" };
-    const char  *line1[] = { "Метео", "Охрана", "Свет" };
+    const char  *line1[] = { "Камеры", "Метео", "Охрана", "Свет" };
     const char  *line2[] = { "Розетки", "Термо", "Бак", "Полив" };
 
     if (!strcmp(message, "Я дома")) {
@@ -46,7 +46,7 @@ void TgMainProcess(const char *token, unsigned from, const char *message)
     }
 
     TgRespButtonsAdd(buttons, 2, line0);
-    TgRespButtonsAdd(buttons, 3, line1);
+    TgRespButtonsAdd(buttons, 4, line1);
     TgRespButtonsAdd(buttons, 4, line2);
     TgRespSend(token, from, "<b>ГЛАВНОЕ МЕНЮ</b>\n", buttons);
 }

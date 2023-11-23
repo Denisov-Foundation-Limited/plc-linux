@@ -30,6 +30,7 @@
 #include <db/database.h>
 #include <stack/stack.h>
 #include <scenario/scenario.h>
+#include <cam/camera.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -255,7 +256,6 @@ static bool PlcRead(const char *path)
 {
     char            full_path[STR_LEN];
     json_error_t    error;
-    char            err[ERROR_STR_LEN];
     size_t          index;
     json_t          *value;
 
@@ -315,8 +315,7 @@ static bool PlcRead(const char *path)
      * Stack configs
      */
 
-    json_t *jstack = json_object_get(data, "stack");
-    json_array_foreach(json_object_get(jstack, "units"), index, value) {
+    json_array_foreach(json_object_get(data, "stack"), index, value) {
         StackUnit *unit = StackUnitNew(
             json_integer_value(json_object_get(value, "id")),
             json_string_value(json_object_get(value, "name")),
@@ -327,6 +326,40 @@ static bool PlcRead(const char *path)
         LogF(LOG_TYPE_INFO, "CONFIGS", "Add Stack unit: \"%s\"", unit->name);
     }
 
+    /**
+     * Cameras configs
+     */
+
+    json_array_foreach(json_object_get(data, "cam"), index, value) {
+        CameraType type;
+
+        const char *type_str = json_string_value(json_object_get(value, "type"));
+
+        if (!strcmp(type_str, "ipcam")) {
+            type = CAM_TYPE_IP;
+        } else {
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Invalid camera type \"%s\"", type_str);
+            return false;
+        }
+
+        Camera *cam = CameraNew(
+            json_string_value(json_object_get(value, "name")),
+            type
+        );
+
+        if (type == CAM_TYPE_IP) {
+            json_t *jipcam = json_object_get(value, "ipcam");
+
+            strncpy(cam->ipcam.ip, json_string_value(json_object_get(jipcam, "ip")), SHORT_STR_LEN);
+            strncpy(cam->ipcam.login, json_string_value(json_object_get(jipcam, "login")), SHORT_STR_LEN);
+            strncpy(cam->ipcam.password, json_string_value(json_object_get(jipcam, "password")), SHORT_STR_LEN);
+            cam->ipcam.stream = json_integer_value(json_object_get(jipcam, "stream"));
+        }
+
+        CameraAdd(cam);
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Camera: \"%s\"", cam->name);
+    }
+
     json_decref(data);
     return true;
 }
@@ -335,7 +368,6 @@ static bool ScenarioRead(const char *path)
 {
     char            full_path[STR_LEN];
     json_error_t    error;
-    char            err[ERROR_STR_LEN];
     size_t          index;
     json_t          *value;
 

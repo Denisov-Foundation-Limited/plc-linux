@@ -30,10 +30,10 @@
  */
 bool ResponseFailSend(FCGX_Request *req, const char *module, const char *error);
 
-#define ResponseFailSendF(type, module, args...) \
+#define ResponseFailSendF(type, module, ...) \
     do { \
         char buf[EXT_STR_LEN]; \
-        snprintf(buf, EXT_STR_LEN, ##args); \
+        snprintf(buf, EXT_STR_LEN, __VA_ARGS__); \
         return ResponseFailSend(req, module, buf); \
     } while(0)
 

@@ -132,6 +132,10 @@ void TgMenuBack(unsigned from)
                     menu->level = TG_MENU_LVL_MAIN;
                     break;
 
+                case TG_MENU_LVL_CAM:
+                    menu->level = TG_MENU_LVL_MAIN;
+                    break;
+
                 case TG_MENU_LVL_LIGHT_SELECT:
                     menu->level = TG_MENU_LVL_MAIN;
                     break;
@@ -150,6 +154,10 @@ void TgMenuBack(unsigned from)
 
                 case TG_MENU_LVL_TANK:
                     menu->level = TG_MENU_LVL_TANK_SELECT;
+                    break;
+
+                case TG_MENU_LVL_MAIN:
+                case TG_MENU_LVL_SECURITY_SELECT:
                     break;
             }
             break;

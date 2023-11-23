@@ -25,6 +25,7 @@
 #include <net/tgbot/handlers/tgmeteo.h>
 #include <net/tgbot/handlers/tgmain.h>
 #include <net/tgbot/handlers/tgtank.h>
+#include <net/tgbot/handlers/tgcam.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -77,6 +78,8 @@ static void MessageProcess(unsigned from, const char *message)
                 TgMenuLevelSet(from, TG_MENU_LVL_SECURITY);
             } else if (!strcmp(message, "Метео")) {
                 TgMenuLevelSet(from, TG_MENU_LVL_METEO);
+            } else if (!strcmp(message, "Камеры")) {
+                TgMenuLevelSet(from, TG_MENU_LVL_CAM);
             } if (!strcmp(message, "Свет")) {
                 TgMenuLevelSet(from, TG_MENU_LVL_LIGHT_SELECT);
             } else if (!strcmp(message, "Розетки")) {
@@ -119,6 +122,15 @@ static void MessageProcess(unsigned from, const char *message)
                 TgMenuLevelSet(from, TG_MENU_LVL_TANK);
             }
             break;
+        
+        case TG_MENU_LVL_CAM:
+        case TG_MENU_LVL_METEO:
+        case TG_MENU_LVL_SECURITY_SELECT:
+        case TG_MENU_LVL_SECURITY:
+        case TG_MENU_LVL_SOCKET:
+        case TG_MENU_LVL_LIGHT:
+        case TG_MENU_LVL_TANK:
+            break;
     }
 
     switch (TgMenuLevelGet(from)) {
@@ -132,6 +144,10 @@ static void MessageProcess(unsigned from, const char *message)
 
         case TG_MENU_LVL_SOCKET:
             TgSocketProcess(TgBot.token, from, message);
+            break;
+
+        case TG_MENU_LVL_CAM:
+            TgCamProcess(TgBot.token, from, message);
             break;
         
         case TG_MENU_LVL_LIGHT_SELECT:
@@ -160,6 +176,9 @@ static void MessageProcess(unsigned from, const char *message)
 
         case TG_MENU_LVL_TANK:
             TgTankProcess(TgBot.token, from, message);
+            break;
+
+        case TG_MENU_LVL_SECURITY_SELECT:
             break;
     }
 }

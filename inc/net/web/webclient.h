@@ -30,4 +30,17 @@ typedef enum {
  */
 bool WebClientRequest(WebRequestType type, const char *url, const char *post, char *out);
 
+/**
+ * @brief HTTP telegram photo request
+ * 
+ * @param url Request URL
+ * @param chat_id Telegram user ID
+ * @param file Path to photo file
+ * @param caption Caption under the photo
+ * @param out Output buffer
+ * 
+ * @return True/False as result of request
+ */
+bool WebClientPhotoRequest(const char *url, unsigned chat_id, const char *file, const char *caption, char *out);
+
 #endif /* __WEB_CLIENT_H__ */

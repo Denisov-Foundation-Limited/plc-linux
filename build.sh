@@ -10,6 +10,9 @@ for param in "$*"
 do
     if [[ $param == "--install" ]] ; then
         mkdir -p /var/log/plc
+        mkdir -p /usr/share/plc
+        mkdir -p /usr/share/plc/cam
+        mkdir -p /usr/share/plc/db
         cp -r ./data/configs /etc/plc
         cp plc /bin/
         exit 0
@@ -56,7 +59,7 @@ function find_libs() {
 find_libs
 if [[ $? -eq 0 ]] ; then
     apt update && apt install --yes libfcgi-dev libglib2.0-dev libcurl4-openssl-dev \
-        libjansson-dev cmake clang make libglib2.0-dev libsqlite3-dev git
+        libjansson-dev cmake clang make libglib2.0-dev libsqlite3-dev git nginx ffmpeg
     cp -r ./data/system/default /etc/nginx/sites-enabled/
     cp ./data/system/plc.service /etc/systemd/system/
     systemctl enable plc

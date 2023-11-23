@@ -4,7 +4,7 @@ After=network.target auditd.service
 ConditionPathExists=!/etc/ssh/sshd_not_to_be_run
 
 [Service]
-ExecStart=plc --configs /etc/plc/ --log /var/log/plc/ --db /usr/share/plc/db/
+ExecStart=plc --configs /etc/plc/ --log /var/log/plc/ --db /usr/share/plc/db/ --cam /usr/share/plc/cam/
 ExecReload=/bin/kill -HUP $MAINPID
 KillMode=process
 Restart=always

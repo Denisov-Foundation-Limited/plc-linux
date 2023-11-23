@@ -18,6 +18,7 @@
 #include <net/web/webserver.h>
 #include <utils/utils.h>
 #include <stack/stack.h>
+#include <cam/camera.h>
 
 #include <stdlib.h>
 
@@ -703,4 +704,47 @@ bool RpcTankValveSet(unsigned unit, const char *name, bool status)
 
     json_decref(root);
     return true;
+}
+
+/*********************************************************************/
+/*                                                                   */
+/*                         CAMERA  FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
+bool RpcCameraPhotoSave(unsigned unit, const char *name, const char *filename)
+{
+    if (unit == RPC_DEFAULT_UNIT) {
+        Camera *cam = CameraGet(name);
+        if (cam == NULL) {
+            return false;
+        }
+        return CameraPhotoSave(cam, filename);
+    }
+    return false;
+}
+
+bool RpcCamerasGet(unsigned unit, GList **cams)
+{
+    if (unit == RPC_DEFAULT_UNIT) {
+        for (GList *c = *CamerasGet(); c != NULL; c = c->next) {
+            Camera *cam = (Camera *)c->data;
+
+            RpcCamera *cm = (RpcCamera *)malloc(sizeof(RpcCamera));
+            strncpy(cm->name, cam->name, SHORT_STR_LEN);
+
+            *cams = g_list_append(*cams, (void *)cm);
+        }
+        return true;
+    }
+    return false;
+}
+
+bool RpcCameraPathGet(unsigned unit, char *path)
+{
+    if (unit == RPC_DEFAULT_UNIT) {
+        path = CameraPathGet();
+        return true;
+    }
+    return false;
 }

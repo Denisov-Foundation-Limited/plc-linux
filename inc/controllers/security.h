@@ -174,7 +174,7 @@ void SecuritySensorAdd(const SecuritySensor *sensor);
  * 
  * @return Found security sensor or NULL if not found
  */
-SecuritySensor *SecuritySensorGet(const const char *name);
+SecuritySensor *SecuritySensorGet(const char *name);
 
 /**
  * @brief Get all security controller's sensors

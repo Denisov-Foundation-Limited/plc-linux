@@ -79,7 +79,6 @@ bool DatabaseDrop(Database *db, const char *table)
 bool DatabaseInsert(Database *db, const char *table, const char *columns, const char *values)
 {
     char    request[STR_LEN];
-    int     ret;
 
     snprintf(request, STR_LEN, "INSERT INTO %s (%s) VALUES (%s);", table, columns, values);
 
@@ -89,7 +88,6 @@ bool DatabaseInsert(Database *db, const char *table, const char *columns, const 
 bool DatabaseUpdate(Database *db, const char *table, const char *sql, const char *conditions)
 {
     char    request[STR_LEN];
-    int     ret;
 
     snprintf(request, STR_LEN, "UPDATE %s SET %s WHERE %s;", table, sql, conditions);
 
@@ -135,7 +133,7 @@ bool DatabaseFindOne(Database *db, const char *table, const char *conditions, co
         while (sqlite3_step(stmt) == SQLITE_ROW) {
             switch (type) {
                 case DATABASE_COL_TYPE_STRING:
-                    strncpy((char *)data, sqlite3_column_text(stmt, 0), STR_LEN);
+                    strncpy((char *)data, (const char *)sqlite3_column_text(stmt, 0), STR_LEN);
                     break;
 
                 case DATABASE_COL_TYPE_INT:
@@ -175,7 +173,7 @@ bool DatabaseFindAll(Database *db, const char *table, GList **columns, GList **o
                 DatabaseData *data = (DatabaseData *)malloc(sizeof(DatabaseData));
                 switch (col->type) {
                     case DATABASE_COL_TYPE_STRING:
-                        strncpy(data->text, sqlite3_column_text(stmt, col->id), STR_LEN);
+                        strncpy(data->text, (const char *)sqlite3_column_text(stmt, col->id), STR_LEN);
                         break;
 
                     case DATABASE_COL_TYPE_INT:

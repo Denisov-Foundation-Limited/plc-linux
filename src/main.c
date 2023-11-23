@@ -21,12 +21,14 @@
 #include <db/database.h>
 #include <db/dbloader.h>
 #include <stack/stack.h>
+#include <cam/camera.h>
 
 int main(const int argc, const char **argv)
 {
     char    log_path[STR_LEN] = "./data/log/";
     char    cfg_path[STR_LEN] = "./data/configs/";
     char    db_path[STR_LEN] = "./data/db/";
+    char    cam_path[STR_LEN] = "./data/cam/";
     bool    ftest_start = false;
 
     if (argc > 1) {
@@ -37,6 +39,8 @@ int main(const int argc, const char **argv)
                 strncpy(cfg_path, argv[i + 1], STR_LEN);
             } else if (!strcmp(argv[i], "--db")) {
                 strncpy(db_path, argv[i + 1], STR_LEN);
+            } else if (!strcmp(argv[i], "--cam")) {
+                strncpy(cam_path, argv[i + 1], STR_LEN);
             } else if (!strcmp(argv[i], "--log")) {
                 strncpy(log_path, argv[i + 1], STR_LEN);
             } else if (!strcmp(argv[i], "?")) {
@@ -52,6 +56,7 @@ int main(const int argc, const char **argv)
 
     LogPathSet(log_path);
     DatabasePathSet(db_path);
+    CameraPathSet(cam_path);
 
     Log(LOG_TYPE_INFO, "MAIN", "Starting application");
 

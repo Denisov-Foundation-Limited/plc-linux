@@ -110,4 +110,18 @@ bool RpcTankPumpSet(unsigned unit, const char *name, bool status);
 bool RpcTankValveSet(unsigned unit, const char *name, bool status);
 bool RpcTanksGet(unsigned unit, GList **tanks);
 
+/*********************************************************************/
+/*                                                                   */
+/*                         CAMERA  FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
+typedef struct {
+    char    name[SHORT_STR_LEN];
+} RpcCamera;
+
+bool RpcCameraPhotoSave(unsigned unit, const char *name, const char *filename);
+bool RpcCamerasGet(unsigned unit, GList **cams);
+bool RpcCameraPathGet(unsigned unit, char *path);
+
 #endif /* __RPC_H__ */

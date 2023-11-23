@@ -53,7 +53,6 @@ static bool StatusSave(SecurityStatusType type, bool status)
 {
     Database    db;
     char        sql[STR_LEN];
-    char        con[STR_LEN];
 
     if (!DatabaseOpen(&db, SECURITY_DB_FILE)) {
         DatabaseClose(&db);

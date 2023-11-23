@@ -41,7 +41,7 @@ static size_t WebOutputWrite(char *ptr, size_t size, size_t nmemb, void *data)
 bool WebClientRequest(WebRequestType type, const char *url, const char *post, char *out)
 {
     CURL    *curl_handle;
-    int     ret;
+    int     ret = CURLE_OK;
 
     curl_handle = curl_easy_init();
     if (!curl_handle) {
@@ -61,6 +61,58 @@ bool WebClientRequest(WebRequestType type, const char *url, const char *post, ch
     curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, out);
     ret = curl_easy_perform(curl_handle);
     curl_easy_cleanup(curl_handle);
+
+    if (ret != CURLE_OK) {
+        return false;
+    }
+
+    return true;
+}
+
+bool WebClientPhotoRequest(const char *url, unsigned chat_id, const char *file, const char *caption, char *out)
+{
+    CURL                *curl;
+    CURLcode            ret = CURLE_OK;
+    curl_mime           *mime;
+    curl_mimepart       *part;
+    struct curl_slist   *headers = NULL;
+    char                id_str[STR_LEN];
+
+    snprintf(id_str, STR_LEN, "%u", chat_id);
+
+    curl_global_init(CURL_GLOBAL_ALL);
+    curl = curl_easy_init();
+    if (curl)
+    {
+        curl_easy_setopt(curl, CURLOPT_VERBOSE, 1L);
+        curl_easy_setopt(curl, CURLOPT_POST, 1);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_DEFAULT_PROTOCOL, "https");
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &WebOutputWrite);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, out);
+        
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+        curl_slist_append(headers, "Content-Type: multipart/form-data");
+        curl_slist_append(headers, "charset=utf-8");
+        
+        mime = curl_mime_init(curl);
+        part = curl_mime_addpart(mime);
+        curl_mime_name(part, "chat_id");
+        curl_mime_data(part, id_str, CURL_ZERO_TERMINATED);
+        part = curl_mime_addpart(mime);
+        curl_mime_name(part, "photo");
+        curl_mime_filedata(part, file);
+        curl_mime_type(part, "image/jpeg");
+        part = curl_mime_addpart(mime);
+        curl_mime_name(part, "caption");
+        curl_mime_data(part, caption, CURL_ZERO_TERMINATED);
+        curl_easy_setopt(curl, CURLOPT_MIMEPOST, mime);
+
+        ret = curl_easy_perform(curl);
+        curl_mime_free(mime);
+        curl_slist_free_all(headers);
+    }
+    curl_easy_cleanup(curl);
 
     if (ret != CURLE_OK) {
         return false;

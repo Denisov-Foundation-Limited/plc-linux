@@ -8,20 +8,18 @@
 /*                                                                   */
 /*********************************************************************/
 
-#ifndef __CFG_SECURITY_H__
-#define __CFG_SECURITY_H__
+#ifndef __TG_CAM_H__
+#define __TG_CAM_H__
 
 #include <stdbool.h>
 
-#include <jansson.h>
-
 /**
- * @brief Loading security configurations
+ * @brief Process Camera Menu commands
  * 
- * @param data JSON configs data
- * 
- * @return True/False as result of loading configs 
+ * @param token Telegram Bot uniq token
+ * @param from From user id
+ * @param message Telegram message 
  */
-bool CfgSecurityLoad(json_t *data);
+void TgCamProcess(const char *token, unsigned from, const char *message);
 
-#endif /* __CFG_SECURITY_H__ */
+#endif /* __TG_CAM_H__ */
