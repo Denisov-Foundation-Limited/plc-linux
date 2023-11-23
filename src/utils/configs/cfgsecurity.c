@@ -63,34 +63,36 @@ static bool CfgSecuritySensorsLoad(json_t *jsecurity)
     json_t  *ext_value;
 
     json_array_foreach(json_object_get(jsecurity, "sensors"), ext_index, ext_value) {
-        SecuritySensor *sensor = (SecuritySensor *)malloc(sizeof(SecuritySensor));
-
-        strncpy(sensor->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
-
-        sensor->gpio = GpioPinGet(json_string_value(json_object_get(ext_value, "gpio")));
-        if (sensor->gpio == NULL) {
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Security sensor \"%s\" error: GPIO \"%s\" not found",
-                sensor->name, json_string_value(json_object_get(ext_value, "gpio")));
-            return false;
-        }
+        SecuritySensorType  type;
+        GpioPin             *gpio = NULL;
 
         const char *type_str = json_string_value(json_object_get(ext_value, "type"));
         if (!strcmp(type_str, "reed")) {
-            sensor->type = SECURITY_SENSOR_REED;
+            type = SECURITY_SENSOR_REED;
         } else if (!strcmp(type_str, "pir")) {
-            sensor->type = SECURITY_SENSOR_PIR;
+            type = SECURITY_SENSOR_PIR;
         } else if (!strcmp(type_str, "microwave")) {
-            sensor->type = SECURITY_SENSOR_MICRO_WAVE;
+            type = SECURITY_SENSOR_MICRO_WAVE;
         } else {
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown Security sensor \"%s\" type: \"%s\"", sensor->name, type_str);
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown Security sensor type: \"%s\"", type_str);
             return false;
         }
 
-        sensor->telegram = json_boolean_value(json_object_get(ext_value, "telegram"));
-        sensor->sms = json_boolean_value(json_object_get(ext_value, "sms"));
-        sensor->alarm = json_boolean_value(json_object_get(ext_value, "alarm"));
-        sensor->detected = false;
-        sensor->counter = 0;
+        gpio = GpioPinGet(json_string_value(json_object_get(ext_value, "gpio")));
+        if (gpio == NULL) {
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Security sensor error: GPIO \"%s\" not found",
+                json_string_value(json_object_get(ext_value, "gpio")));
+            return false;
+        }
+
+        SecuritySensor *sensor = SecuritySensorNew(
+            json_string_value(json_object_get(ext_value, "name")),
+            type,
+            gpio,
+            json_boolean_value(json_object_get(ext_value, "telegram")),
+            json_boolean_value(json_object_get(ext_value, "sms")),
+            json_boolean_value(json_object_get(ext_value, "alarm"))
+        );
 
         SecuritySensorAdd(sensor);
 
@@ -108,12 +110,13 @@ static bool CfgSecurityKeysLoad(json_t *jsecurity)
     json_t  *ext_value;
 
     json_array_foreach(json_object_get(jsecurity, "keys"), ext_index, ext_value) {
-        SecurityKey *key = (SecurityKey *)malloc(sizeof(SecurityKey));
-
-        strncpy(key->name, json_string_value(json_object_get(ext_value, "name")), SHORT_STR_LEN);
-        strncpy(key->id, json_string_value(json_object_get(ext_value, "id")), SHORT_STR_LEN);
+        SecurityKey *key = SecurityKeyNew(
+            json_string_value(json_object_get(ext_value, "name")),
+            json_string_value(json_object_get(ext_value, "id"))
+        );
 
         SecurityKeyAdd(key);
+
         LogF(LOG_TYPE_INFO, "CONFIGS", "Add security key: \"%s\"", key->name);
     }
     return true;

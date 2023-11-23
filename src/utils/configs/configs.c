@@ -82,25 +82,28 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
      */
 
     json_array_foreach(json_object_get(data, "extenders"), index, value) {
-        Extender *ext = (Extender *)malloc(sizeof(Extender));
-
-        strncpy(ext->name, json_string_value(json_object_get(value, "name")), GPIO_NAME_STR_LEN);
-        ext->addr = json_integer_value(json_object_get(value, "addr"));
-        ext->base = json_integer_value(json_object_get(value, "base"));
-        ext->enabled = json_boolean_value(json_object_get(value, "enabled"));
+        ExtenderType type;
 
         const char *type_str = json_string_value(json_object_get(value, "type"));
         if (!strcmp(type_str, "pcf8574")) {
-            ext->type = EXT_TYPE_PCF_8574;
+            type = EXT_TYPE_PCF_8574;
         } else if (!strcmp(type_str, "mcp23017")) {
-            ext->type = EXT_TYPE_MCP_23017;
+            type = EXT_TYPE_MCP_23017;
         } else if (!strcmp(type_str, "ads1115")) {
-            ext->type = EXT_TYPE_ADS_1115;
+            type = EXT_TYPE_ADS_1115;
         } else {
             json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown Extender type \"%s\"", ext->name);
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown Extender type \"%s\"", type_str);
             return false;
         }
+
+        Extender *ext = ExtenderNew(
+            json_string_value(json_object_get(value, "name")),
+            type,
+            json_integer_value(json_object_get(value, "addr")),
+            json_integer_value(json_object_get(value, "base")),
+            json_boolean_value(json_object_get(value, "enabled"))
+        );
 
         if (!ExtenderAdd(ext, err)) {
             json_decref(data);
@@ -117,45 +120,52 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
      */
 
     json_array_foreach(json_object_get(data, "gpio"), index, value) {
-        GpioPin *pin = (GpioPin *)malloc(sizeof(GpioPin));
-
-        strncpy(pin->name, json_string_value(json_object_get(value, "name")), SHORT_STR_LEN);
-        pin->pin = json_integer_value(json_object_get(value, "pin"));
+        GpioMode    mode;
+        GpioPull    pull;
+        GpioType    type;
 
         const char *type_str = json_string_value(json_object_get(value, "type"));
         if (!strcmp(type_str, "analog")) {
-            pin->type = GPIO_TYPE_ANALOG;
+            type = GPIO_TYPE_ANALOG;
         } else if (!strcmp(type_str, "digital")) {
-            pin->type = GPIO_TYPE_DIGITAL;
+            type = GPIO_TYPE_DIGITAL;
         } else {
             json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown GPIO pin type \"%s\"", pin->name);
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown GPIO pin type \"%s\"", type_str);
             return false;
         }
 
         const char *mode_str = json_string_value(json_object_get(value, "mode"));
         if (!strcmp(mode_str, "input")) {
-            pin->mode = GPIO_MODE_INPUT;
+            mode = GPIO_MODE_INPUT;
         } else if (!strcmp(mode_str, "output")) {
-            pin->mode = GPIO_MODE_OUTPUT;
+            mode = GPIO_MODE_OUTPUT;
         } else {
             json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown GPIO pin mode \"%s\"", pin->name);
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown GPIO pin mode \"%s\"", mode_str);
             return false;
         }
 
         const char *pull_str = json_string_value(json_object_get(value, "pull"));
         if (!strcmp(pull_str, "up")) {
-            pin->pull = GPIO_PULL_UP;
+            pull = GPIO_PULL_UP;
         } else if (!strcmp(pull_str, "down")) {
-            pin->pull = GPIO_PULL_DOWN;
+            pull = GPIO_PULL_DOWN;
         } else if (!strcmp(pull_str, "none")) {
-            pin->pull = GPIO_PULL_NONE;
+            pull = GPIO_PULL_NONE;
         } else {
             json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown GPIO pin pull \"%s\"", pin->name);
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown GPIO pin pull \"%s\"", pull_str);
             return false;
         }
+
+        GpioPin *pin = GpioPinNew(
+            json_string_value(json_object_get(value, "name")),
+            type,
+            json_integer_value(json_object_get(value, "pin")),
+            mode,
+            pull
+        );
 
         if (!GpioPinAdd(pin, err)) {
             json_decref(data);
@@ -172,17 +182,17 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
      */
 
     json_array_foreach(json_object_get(data, "lcd"), index, value) {
-        LCD *lcd = (LCD *)malloc(sizeof(LCD));
-
-        strncpy(lcd->name, json_string_value(json_object_get(value, "name")), SHORT_STR_LEN);
-        lcd->rs = json_integer_value(json_object_get(value, "rs"));
-        lcd->rw = json_integer_value(json_object_get(value, "rw"));
-        lcd->e = json_integer_value(json_object_get(value, "e"));
-        lcd->k = json_integer_value(json_object_get(value, "k"));
-        lcd->d4 = json_integer_value(json_object_get(value, "d4"));
-        lcd->d5 = json_integer_value(json_object_get(value, "d5"));
-        lcd->d6 = json_integer_value(json_object_get(value, "d6"));
-        lcd->d7 = json_integer_value(json_object_get(value, "d7"));
+        LCD *lcd = LcdNew(
+            json_string_value(json_object_get(value, "name")),
+            json_integer_value(json_object_get(value, "rs")),
+            json_integer_value(json_object_get(value, "rw")),
+            json_integer_value(json_object_get(value, "e")),
+            json_integer_value(json_object_get(value, "k")),
+            json_integer_value(json_object_get(value, "d4")),
+            json_integer_value(json_object_get(value, "d5")),
+            json_integer_value(json_object_get(value, "d6")),
+            json_integer_value(json_object_get(value, "d7"))
+        );
 
         if (!LcdAdd(lcd)) {
             json_decref(data);
@@ -281,16 +291,19 @@ static bool PlcRead(const char *path)
     if (json_boolean_value(json_object_get(tgbot, "enabled"))) {
         LogF(LOG_TYPE_INFO, "CONFIGS", "Add Telegram bot token: \"%s\"", json_string_value(json_object_get(tgbot, "token")));
         json_array_foreach(json_object_get(tgbot, "users"), index, value) {
-            TgBotUser *user = (TgBotUser *)malloc(sizeof(TgBotUser));
-            TgMenu *menu = (TgMenu *)malloc(sizeof(TgMenu));
-
-            strncpy(user->name, json_string_value(json_object_get(value, "name")), STR_LEN);
-            user->chat_id = json_integer_value(json_object_get(value, "id"));
-            menu->from = user->chat_id;
-            menu->level = TG_MENU_LVL_MAIN;
+            TgBotUser *user = TgBotUserNew(
+                json_string_value(json_object_get(value, "name")),
+                json_integer_value(json_object_get(value, "id"))
+            );
 
             TgBotUserAdd(user);
+
+            TgMenu *menu = TgMenuNew(
+                user->chat_id
+            );
+            
             TgMenuAdd(menu);
+
             LogF(LOG_TYPE_INFO, "CONFIGS", "Add Telegram bot user: \"%s\"", user->name);
         }
     } else {

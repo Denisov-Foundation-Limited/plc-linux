@@ -228,6 +228,16 @@ static int TelegramThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
+TgBotUser *TgBotUserNew(const char *name, unsigned id)
+{
+    TgBotUser *user = (TgBotUser *)malloc(sizeof(TgBotUser));
+
+    strncpy(user->name, name, SHORT_STR_LEN);
+    user->chat_id = id;
+
+    return user;
+}
+
 void TgBotDisable()
 {
     TgBot.enabled = false;

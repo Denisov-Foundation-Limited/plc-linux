@@ -32,10 +32,18 @@ typedef enum {
 typedef struct {
     unsigned    from;
     TgMenuLevel level;
-    TgMenuLevel prev;
     StackUnit   *unit;
     char        data[STR_LEN];
 } TgMenu;
+
+/**
+ * @brief Make new Telegram menu object
+ * 
+ * @param from User ID
+ * 
+ * @return Menu
+ */
+TgMenu *TgMenuNew(unsigned from);
 
 /**
  * @brief Add menu for user

@@ -26,6 +26,18 @@ static GList *menus = NULL;
 /*                                                                   */
 /*********************************************************************/
 
+TgMenu *TgMenuNew(unsigned from)
+{
+    TgMenu *menu = (TgMenu *)malloc(sizeof(TgMenu));
+
+    menu->from = from;
+    menu->level = TG_MENU_LVL_MAIN;
+    menu->unit = NULL;
+    memset(menu->data, 0x0, STR_LEN);
+
+    return menu;
+}
+
 void TgMenuAdd(TgMenu *menu)
 {
     menus = g_list_append(menus, (void *)menu);

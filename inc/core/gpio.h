@@ -42,6 +42,19 @@ typedef struct {
 } GpioPin;
 
 /**
+ * @brief Make new GPIO object
+ * 
+ * @param name GPIO name
+ * @param type GPIO type
+ * @param pin Pin number
+ * @param mode GPIO mode
+ * @param pull Pull up or down if needed
+ * 
+ * @return Gpio object
+ */
+GpioPin *GpioPinNew(const char *name, GpioType type, unsigned pin, GpioMode mode, GpioPull pull);
+
+/**
  * @brief GPIO global initialization
  *
  * @return true/false as result of initialization GPIO

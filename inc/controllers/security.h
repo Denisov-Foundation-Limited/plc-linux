@@ -66,6 +66,30 @@ typedef struct {
 } SecuritySensor;
 
 /**
+ * @brief Make new security sensor object
+ * 
+ * @param name Name of sensor
+ * @param type Sensor type
+ * @param gpio GPIO pin
+ * @param telegram Telegram notify status
+ * @param sms SMS notify status
+ * @param alarm Start alarm if detected
+ * 
+ * @return Sensor object
+ */
+SecuritySensor *SecuritySensorNew(const char *name, SecuritySensorType type, GpioPin *gpio, bool telegram, bool sms, bool alarm);
+
+/**
+ * @brief Make new security key object
+ * 
+ * @param name Name of key
+ * @param value Key value
+ * 
+ * @return SecurityKey object
+ */
+SecurityKey *SecurityKeyNew(const char *name, const char *value);
+
+/**
  * @brief Set security sound status
  * 
  * @param sound Sound type

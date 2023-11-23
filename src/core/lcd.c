@@ -73,6 +73,23 @@ static int LcdInitThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
+LCD *LcdNew(const char *name, unsigned rs, unsigned rw, unsigned e, unsigned k, unsigned d4, unsigned d5, unsigned d6, unsigned d7)
+{
+    LCD *lcd = (LCD *)malloc(sizeof(LCD));
+
+    strncpy(lcd->name, name, SHORT_STR_LEN);
+    lcd->rs = rs;
+    lcd->rw = rw;
+    lcd->e = e;
+    lcd->k = k;
+    lcd->d4 = d4;
+    lcd->d5 = d5;
+    lcd->d6 = d6;
+    lcd->d7 = d7;
+
+    return lcd;
+}
+
 GList **LcdsGet()
 {
     return &lcds;

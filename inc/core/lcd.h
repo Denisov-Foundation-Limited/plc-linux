@@ -38,6 +38,23 @@ typedef struct {
 } LCD;
 
 /**
+ * @brief Make new LCD object
+ * 
+ * @param name Name of LCD
+ * @param rs Mgmt pin
+ * @param rw Mgmt pin
+ * @param e Mgmt pin
+ * @param k Mgmt pin
+ * @param d4 Mgmt pin
+ * @param d5 Mgmt pin
+ * @param d6 Mgmt pin
+ * @param d7 Mgmt pin
+ * 
+ * @return LCD object
+ */
+LCD *LcdNew(const char *name, unsigned rs, unsigned rw, unsigned e, unsigned k, unsigned d4, unsigned d5, unsigned d6, unsigned d7);
+
+/**
  * @brief Get all LCD modules
  */
 GList **LcdsGet();

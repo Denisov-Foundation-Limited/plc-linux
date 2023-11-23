@@ -33,6 +33,19 @@ static GList *exts = NULL;
 /*                                                                   */
 /*********************************************************************/
 
+Extender *ExtenderNew(const char *name, ExtenderType type, unsigned addr, unsigned base, bool enabled)
+{
+    Extender *ext = (Extender *)malloc(sizeof(Extender));
+
+    strncpy(ext->name, name, SHORT_STR_LEN);
+    ext->type = type;
+    ext->addr = addr;
+    ext->base = base;
+    ext->enabled = enabled;
+
+    return ext;    
+}
+
 bool ExtenderAdd(const Extender *ext, char *err)
 {
 #ifdef __arm__

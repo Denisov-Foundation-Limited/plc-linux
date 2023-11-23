@@ -28,6 +28,19 @@ static GList *pins = NULL;
 /*                                                                   */
 /*********************************************************************/
 
+GpioPin *GpioPinNew(const char *name, GpioType type, unsigned pin, GpioMode mode, GpioPull pull)
+{
+    GpioPin *gpio = (GpioPin *)malloc(sizeof(GpioPin));
+
+    strncpy(gpio->name, name, SHORT_STR_LEN);
+    gpio->type = type;
+    gpio->pin = pin;
+    gpio->mode = mode;
+    gpio->pull = pull;
+
+    return gpio;
+}
+
 bool GpioInit()
 {
 #ifdef __arm__

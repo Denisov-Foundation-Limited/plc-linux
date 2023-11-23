@@ -22,12 +22,25 @@ typedef enum {
 } ExtenderType;
 
 typedef struct {
-    char            name[STR_LEN];
+    char            name[SHORT_STR_LEN];
     ExtenderType    type;
     unsigned        addr;
     unsigned        base;
     bool            enabled;
 } Extender;
+
+/**
+ * @brief Make new Extender object
+ * 
+ * @param name Name of extender
+ * @param type Type of extender
+ * @param addr I2C addr of extender
+ * @param base GPIO base number
+ * @param enabled Enabled status of extender
+ * 
+ * @return Extender object
+ */
+Extender *ExtenderNew(const char *name, ExtenderType type, unsigned addr, unsigned base, bool enabled);
 
 /**
  * @brief Add new I2C extender

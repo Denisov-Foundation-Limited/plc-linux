@@ -18,9 +18,19 @@
 #define TG_BOT_GET_UPDATES_URL  ""
 
 typedef struct {
-    char        name[STR_LEN];
+    char        name[SHORT_STR_LEN];
     unsigned    chat_id;
 } TgBotUser;
+
+/**
+ * @brief Make new telegram user
+ * 
+ * @param name User name
+ * @param id User chat id
+ * 
+ * @return TgBotUserobject
+ */
+TgBotUser *TgBotUserNew(const char *name, unsigned id);
 
 /**
  * @brief Disable Telegram Bot for slave controllers 

@@ -318,6 +318,32 @@ static int KeysThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
+SecuritySensor *SecuritySensorNew(const char *name, SecuritySensorType type, GpioPin *gpio, bool telegram, bool sms, bool alarm)
+{
+    SecuritySensor *sensor = (SecuritySensor *)malloc(sizeof(SecuritySensor));
+
+    strncpy(sensor->name, name, SHORT_STR_LEN);
+    sensor->type = type;
+    sensor->gpio = gpio;
+    sensor->telegram = telegram;
+    sensor->sms = sms;
+    sensor->alarm = alarm;
+    sensor->counter = 0;
+    sensor->detected = false;
+
+    return sensor;
+}
+
+SecurityKey *SecurityKeyNew(const char *name, const char *value)
+{
+    SecurityKey *key = (SecurityKey *)malloc(sizeof(SecurityKey));
+
+    strncpy(key->name, name, SHORT_STR_LEN);
+    strncpy(key->id, value, SHORT_STR_LEN);
+
+    return key;
+}
+
 void SecuritySoundSet(SecuritySound sound, bool status)
 {
     Security.sound[sound] = status;
