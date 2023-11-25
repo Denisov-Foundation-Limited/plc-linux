@@ -743,7 +743,7 @@ bool RpcCamerasGet(unsigned unit, GList **cams)
 bool RpcCameraPathGet(unsigned unit, char *path)
 {
     if (unit == RPC_DEFAULT_UNIT) {
-        path = CameraPathGet();
+        strncpy(path, CameraPathGet(), STR_LEN);
         return true;
     }
     return false;

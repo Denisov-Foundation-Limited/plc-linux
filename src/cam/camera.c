@@ -61,7 +61,7 @@ bool CameraPhotoSave(Camera *cam, const char *filename)
 
     if (cam->type == CAM_TYPE_IP) {
         snprintf(cmd, STR_LEN,
-            "ffmpeg -rtsp_transport tcp -i \"rtsp://%s:554/stream%u?username=%s&password=%s\" -frames:v 1 -q:v 1 -y %s > /dev/null",
+            "ffmpeg -rtsp_transport tcp -i \"rtsp://%s:554/stream%u?username=%s&password=%s\" -frames:v 1 -q:v 1 -y %s > /dev/null 2>1",
             cam->ipcam.ip,
             cam->ipcam.stream,
             cam->ipcam.login,

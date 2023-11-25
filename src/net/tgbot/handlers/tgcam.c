@@ -28,7 +28,7 @@ void TgCamProcess(const char *token, unsigned from, const char *message)
     GString     *text = g_string_new("<b>КАМЕРЫ</b>\n\n");
     char        file_name[SHORT_STR_LEN];
     char        file_full_name[SHORT_STR_LEN];
-    char        *cam_path = NULL;
+    char        cam_path[STR_LEN];
 
     if (RpcCamerasGet(RPC_DEFAULT_UNIT, &cams)) {
         for (GList *c = cams; c != NULL; c = c->next) {
@@ -40,10 +40,10 @@ void TgCamProcess(const char *token, unsigned from, const char *message)
                 if (RpcCameraPathGet(RPC_DEFAULT_UNIT, cam_path)) {
 
                     snprintf(file_name, SHORT_STR_LEN, "%u.jpg", from);
-                    snprintf(file_name, SHORT_STR_LEN, "%s%u.jpg", file_full_name, from);
+                    snprintf(file_full_name, SHORT_STR_LEN, "%s%u.jpg", cam_path, from);
 
                     if (RpcCameraPhotoSave(RPC_DEFAULT_UNIT, cam->name, file_name)) {
-                        if (!TgPhotoRespSend(token, from, file_full_name, "Camera 1")) {
+                        if (!TgPhotoRespSend(token, from, file_full_name, cam->name)) {
                             text = g_string_append(text, "<b>Ошибка отправки фото</b>");
                             LogF(LOG_TYPE_ERROR, "TGCAM", "Failed to send cam photo for user %d", from);
                         }
