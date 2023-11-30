@@ -36,8 +36,6 @@ typedef enum {
 
 typedef enum {
     SECURITY_GPIO_STATUS_LED,
-    SECURITY_GPIO_ALARM_LED,
-    SECURITY_GPIO_BUZZER,
     SECURITY_GPIO_ALARM_RELAY,
     SECURITY_GPIO_MAX
 } SecurityGpio;

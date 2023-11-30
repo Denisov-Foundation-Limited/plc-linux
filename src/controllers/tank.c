@@ -12,6 +12,7 @@
 #include <utils/log.h>
 #include <net/notifier.h>
 #include <db/database.h>
+#include <plc/plc.h>
 
 #include <stdlib.h>
 #include <threads.h>
@@ -24,7 +25,7 @@
 
 static struct _Tanks {
     GList   *tanks;
-    mtx_t   save_mtx;
+    mtx_t   sts_mtx;
 } Tanks = {
     .tanks = NULL
 };
@@ -35,14 +36,11 @@ static struct _Tanks {
 /*                                                                   */
 /*********************************************************************/
 
-static int StatusSaveThread(void *data)
+static bool StatusSave(Tank *tank)
 {
     Database    db;
     char        sql[STR_LEN];
     char        con[STR_LEN];
-    Tank        *tank = (Tank *)data;
-
-    mtx_lock(&Tanks.save_mtx);
 
     if (!DatabaseOpen(&db, TANK_DB_FILE)) {
         DatabaseClose(&db);
@@ -55,14 +53,13 @@ static int StatusSaveThread(void *data)
 
     if (!DatabaseUpdate(&db, "tank", sql, con)) {
         DatabaseClose(&db);
-        mtx_unlock(&Tanks.save_mtx);
         Log(LOG_TYPE_ERROR, "TANK", "Failed to update Tank database");
         return false;
     }
 
     DatabaseClose(&db);
-    mtx_unlock(&Tanks.save_mtx);
-    return 0;
+
+    return true;
 }
 
 static bool NotifyLevelCheck(Tank *tank, unsigned num)
@@ -85,7 +82,10 @@ static void TankLevelProcess(Tank *tank)
     if (tank->level == TANK_LEVEL_PERCENT_MIN) {
         GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], false);
         tank->pump = false;
+        PlcAlarmSet(PLC_ALARM_TANK, true);
+        PlcBuzzerRun(PLC_BUZZER_TANK_EMPTY, true);
     } else {
+        PlcAlarmSet(PLC_ALARM_TANK, false);
         GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], true);
         tank->pump = true;
     }
@@ -218,9 +218,9 @@ void TankAdd(Tank *tank)
 
 bool TankStatusSet(Tank *tank, bool status, bool save)
 {
-    thrd_t  save_th;
-
     if (tank->status != status) {
+        mtx_lock(&Tanks.sts_mtx);
+
         if (status) {
             LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water control enabled", tank->name);
         } else {
@@ -230,10 +230,19 @@ bool TankStatusSet(Tank *tank, bool status, bool save)
         tank->status = status;
         GpioPinWrite(tank->gpio[TANK_GPIO_STATUS_LED], status);
 
-        if (save) {
-            thrd_create(&save_th, &StatusSaveThread, (void *)tank);
-            thrd_detach(save_th);
+        if (!status) {
+            GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], false);
+            GpioPinWrite(tank->gpio[TANK_GPIO_VALVE], false);
+            tank->valve = false;
+            tank->pump = false;
+            PlcAlarmSet(PLC_ALARM_TANK, false);
         }
+
+        if (save) {
+            StatusSave(tank);
+        }
+
+        mtx_unlock(&Tanks.sts_mtx);
 
         TankLevelProcess(tank);
     }

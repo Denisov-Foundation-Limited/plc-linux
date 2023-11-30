@@ -31,6 +31,7 @@
 #include <stack/stack.h>
 #include <scenario/scenario.h>
 #include <cam/camera.h>
+#include <plc/plc.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -258,6 +259,7 @@ static bool PlcRead(const char *path)
     json_error_t    error;
     size_t          index;
     json_t          *value;
+    GpioPin         *gpio = NULL;
 
     snprintf(full_path, STR_LEN, "%s%s", path, CONFIGS_PLC_FILE);
 
@@ -265,6 +267,25 @@ static bool PlcRead(const char *path)
     if (!data) {
         return false;
     }
+
+    json_t *jglobal = json_object_get(data, "global");
+    json_t *jggpio = json_object_get(jglobal, "gpio");
+
+    gpio = GpioPinGet(json_string_value(json_object_get(jggpio, "alarm")));
+    if (gpio == NULL) {
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Alarm LED GPIO \"%s\" not found",
+            json_string_value(json_object_get(jggpio, "alarm")));
+        return false;
+    }
+    PlcGpioSet(PLC_GPIO_ALARM_LED, gpio);
+
+    gpio = GpioPinGet(json_string_value(json_object_get(jggpio, "buzzer")));
+    if (gpio == NULL) {
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Buzzer GPIO \"%s\" not found",
+            json_string_value(json_object_get(jggpio, "buzzer")));
+        return false;
+    }
+    PlcGpioSet(PLC_GPIO_BUZZER, gpio);
 
     json_t *server = json_object_get(data, "server");
     const char *ip = json_string_value(json_object_get(server, "ip"));

@@ -46,7 +46,7 @@ static bool DatabaseSecurityLoad()
     status = 0;
     alarm = 0;
 
-    if (!DatabaseRowExists(&db, "security", "name=\"main\"", &exists)) {
+    if (!DatabaseRowExists(&db, "security", "name=\"controller\"", &exists)) {
         Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to check Security controller status");
         DatabaseClose(&db);
         return false;

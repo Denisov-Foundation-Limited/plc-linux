@@ -19,6 +19,7 @@
 #include <stack/stack.h>
 #include <stack/rpc.h>
 #include <scenario/scenario.h>
+#include <plc/plc.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -30,7 +31,7 @@ static struct _Security {
     GList           *sensors;
     GList           *keys;
     GpioPin         *gpio[SECURITY_GPIO_MAX];
-    mtx_t           sec_mtx;
+    mtx_t           sts_mtx;
     bool            status;
     bool            alarm;
     bool            last_alarm;
@@ -74,92 +75,6 @@ static bool StatusSave(SecurityStatusType type, bool status)
 
     DatabaseClose(&db);
     return true;
-}
-
-static int StatusSaveThread(void *data)
-{
-    mtx_lock(&Security.sec_mtx);
-
-    if (!StatusSave(SECURITY_SAVE_TYPE_STATUS, SecurityStatusGet())) {
-        mtx_unlock(&Security.sec_mtx);
-        return -1;
-    }
-
-    mtx_unlock(&Security.sec_mtx);
-    return 0;
-}
-
-static void AlarmHandler()
-{
-    if (Security.alarm) {
-        if (Security.last_alarm) {
-            Security.last_alarm = false;
-            if (Security.sound[SECURITY_SOUND_ALARM]) {
-                GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
-            }
-            GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_LED], false);
-        } else {
-            Security.last_alarm = true;
-            if (Security.sound[SECURITY_SOUND_ALARM]) {
-                GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
-            }
-            GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_LED], true);
-        }
-    }
-}
-
-static int BuzzerThread(void *data)
-{
-    if (Security.status && Security.sound[SECURITY_SOUND_EXIT]) {
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
-        UtilsMsecSleep(100);
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
-        UtilsMsecSleep(100);
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
-        UtilsMsecSleep(100);
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
-    } else if (!Security.status && Security.sound[SECURITY_SOUND_ENTER]) {
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], true);
-        UtilsMsecSleep(300);
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
-    }
-    return 0;
-}
-
-static int StatusNotifyThread(void *data)
-{
-    char    msg[STR_LEN];
-
-    StackUnit *unit = StackUnitGet(RPC_DEFAULT_UNIT);
-
-    if (Security.status) {
-        snprintf(msg, STR_LEN, "ОХРАНА:%s+сигнализация+включена", unit->name);
-    } else {
-        snprintf(msg, STR_LEN, "ОХРАНА:%s+сигнализация+отключена", unit->name);
-    }
-
-    if (!NotifierTelegramSend(msg)) {
-        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send status telegram message");
-    } else {
-        Log(LOG_TYPE_INFO, "SECURITY", "Status message was sended to telegram");
-    }
-
-    if (!NotifierSmsSend(msg)) {
-        Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send security status sms message");
-    } else {
-        Log(LOG_TYPE_INFO, "SECURITY", "Status sms was sended to phone");
-    }
-
-    return 0;
-}
-
-static int AlarmThread(void *data)
-{
-    for (;;) {
-        AlarmHandler();
-        UtilsMsecSleep(500);
-    }
-    return 0;
 }
 
 static int SensorsThread(void *data)
@@ -210,6 +125,7 @@ static int SensorsThread(void *data)
                 }
             }
 
+            mtx_lock(&Security.sts_mtx);
             if (sensor->detected && Security.status) {
                 LogF(LOG_TYPE_INFO, "SECURITY", "Security sensor \"%s\" detected!", sensor->name);
 
@@ -236,6 +152,7 @@ static int SensorsThread(void *data)
                     }
                 }
             }
+            mtx_unlock(&Security.sts_mtx);
         }
 
         UtilsSecSleep(1);
@@ -368,7 +285,7 @@ bool SecurityKeyCheck(const char *key)
 
 bool SecurityControllerStart()
 {
-    thrd_t  sens_th, keys_th, alrm_th;
+    thrd_t  sens_th, keys_th;
 
     Log(LOG_TYPE_INFO, "SECURITY", "Starting Security controller");
 
@@ -376,20 +293,25 @@ bool SecurityControllerStart()
     thrd_detach(sens_th);
     thrd_create(&keys_th, &KeysThread, NULL);
     thrd_detach(keys_th);
-    thrd_create(&alrm_th, &AlarmThread, NULL);
-    thrd_detach(alrm_th);
 
     return true;
 }
 
 bool SecurityStatusSet(bool status, bool save)
 {
-    thrd_t  bzr_th, ntf_th, save_th;
+    char    msg[STR_LEN];
 
-    Security.status = status;
+    if (status != Security.status) {
+        mtx_lock(&Security.sts_mtx);
 
-    if (!status) {
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_STATUS_LED], false);
+        Security.status = status;
+
+        if (!status) {
+            LogF(LOG_TYPE_INFO, "SECURITY", "Security controller disabled");
+            SecurityAlarmSet(false, true);
+        } else {
+            LogF(LOG_TYPE_INFO, "SECURITY", "Security controller enabled");
+        }
 
         for (GList *s = Security.sensors; s != NULL; s = s->next) {
             SecuritySensor *sensor = (SecuritySensor *)s->data;
@@ -397,22 +319,51 @@ bool SecurityStatusSet(bool status, bool save)
             sensor->counter = 0;
         }
 
-        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller disabled");
+        GpioPinWrite(Security.gpio[SECURITY_GPIO_STATUS_LED], status);
 
-        SecurityAlarmSet(false, true);
-    } else {
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_STATUS_LED], true);
-        LogF(LOG_TYPE_INFO, "SECURITY", "Security controller enabled");
-    }
+        /**
+         * Buzzer on/off
+         */
 
-    thrd_create(&bzr_th, &BuzzerThread, NULL);
-    thrd_detach(bzr_th);
-    thrd_create(&ntf_th, &StatusNotifyThread, NULL);
-    thrd_detach(ntf_th);
+        if (status && Security.sound[SECURITY_SOUND_EXIT]) {
+            PlcBuzzerRun(PLC_BUZZER_SECURITY_EXIT, true);
+        } else if (!status && Security.sound[SECURITY_SOUND_ENTER]) {
+            PlcBuzzerRun(PLC_BUZZER_SECURITY_ENTER, true);
+        }
 
-    if (save) {
-        thrd_create(&save_th, &StatusSaveThread, NULL);
-        thrd_detach(save_th);
+        /**
+         * Save status to DB
+         */
+
+        if (save) {
+            StatusSave(SECURITY_SAVE_TYPE_STATUS, status);
+        }
+
+        /**
+         * Send notify
+         */
+
+        StackUnit *unit = StackUnitGet(RPC_DEFAULT_UNIT);
+
+        if (status) {
+            snprintf(msg, STR_LEN, "ОХРАНА:%s+сигнализация+включена", unit->name);
+        } else {
+            snprintf(msg, STR_LEN, "ОХРАНА:%s+сигнализация+отключена", unit->name);
+        }
+
+        if (!NotifierTelegramSend(msg)) {
+            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send status telegram message");
+        } else {
+            Log(LOG_TYPE_INFO, "SECURITY", "Status message was sended to telegram");
+        }
+
+        if (!NotifierSmsSend(msg)) {
+            Log(LOG_TYPE_ERROR, "SECURITY", "Failed to send security status sms message");
+        } else {
+            Log(LOG_TYPE_INFO, "SECURITY", "Status sms was sended to phone");
+        }
+
+        mtx_unlock(&Security.sts_mtx);
     }
 
     return true;
@@ -423,12 +374,17 @@ bool SecurityAlarmSet(bool status, bool save)
     Security.alarm = status;
 
     if (status) {
+        PlcAlarmSet(PLC_ALARM_SECURITY, true);
+        if (Security.sound[SECURITY_SOUND_ALARM]) {
+            PlcBuzzerRun(PLC_BUZZER_LOOP, true);
+        }
         GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_RELAY], true);
-        AlarmHandler();
         LogF(LOG_TYPE_INFO, "SECURITY", "Security controller alarm enabled");
     } else {
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_BUZZER], false);
-        GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_LED], false);
+        PlcAlarmSet(PLC_ALARM_SECURITY, false);
+        if (Security.sound[SECURITY_SOUND_ALARM]) {
+            PlcBuzzerRun(PLC_BUZZER_LOOP, false);
+        }
         GpioPinWrite(Security.gpio[SECURITY_GPIO_ALARM_RELAY], false);
         LogF(LOG_TYPE_INFO, "SECURITY", "Security controller alarm disabled");
     }

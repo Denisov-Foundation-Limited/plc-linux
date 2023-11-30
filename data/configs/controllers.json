@@ -28,11 +28,7 @@
     "security": {
         "gpio": {
             "status": "cpu-led-sts1",
-            "buzzer": "ext-buzzer",
-            "alarm": {
-                "led": "cpu-led-alrm",
-                "relay": "none"
-            }
+            "relay": "none"
         },
 
         "sound": {

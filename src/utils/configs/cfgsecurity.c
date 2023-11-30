@@ -31,25 +31,10 @@ static bool CfgSecurityGpioLoad(json_t *jsecurity)
     }
     SecurityGpioSet(SECURITY_GPIO_STATUS_LED, gpio);
 
-    gpio = GpioPinGet(json_string_value(json_object_get(jgpio, "buzzer")));
-    if (gpio == NULL) {
-        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Buzzer GPIO \"%s\" not found", json_string_value(json_object_get(jgpio, "buzzer")));
-        return false;
-    }
-    SecurityGpioSet(SECURITY_GPIO_BUZZER, gpio);
-    
-    json_t *jalarm = json_object_get(jgpio, "alarm");
-    gpio = GpioPinGet(json_string_value(json_object_get(jalarm, "led")));
-    if (gpio == NULL) {
-        LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Alarm LED GPIO \"%s\" not found", json_string_value(json_object_get(jalarm, "led")));
-        return false;
-    }
-    SecurityGpioSet(SECURITY_GPIO_ALARM_LED, gpio);
-
-    gpio = GpioPinGet(json_string_value(json_object_get(jalarm, "relay")));
+    gpio = GpioPinGet(json_string_value(json_object_get(jgpio, "relay")));
     if (gpio == NULL) {
         LogF(LOG_TYPE_ERROR, "CONFIGS", "Security controller error: Alarm Relay GPIO \"%s\" not found",
-            json_string_value(json_object_get(jalarm, "relay")));
+            json_string_value(json_object_get(jgpio, "relay")));
         return false;
     }
     SecurityGpioSet(SECURITY_GPIO_ALARM_RELAY, gpio);

@@ -52,15 +52,42 @@ Camera *CameraNew(const char *name, CameraType type);
 
 /**
  * @brief Get all Camera modules
+ *
+ * @return Cameras
  */
 GList **CamerasGet();
 
+/**
+ * @brief Get current path for save photos
+ *
+ * @return path
+ **/
 char *CameraPathGet();
 
+/**
+ * @brief Set new path for save photos
+ *
+ * @param path Folder
+ */
 void CameraPathSet(const char *path);
 
+/**
+ * @brief Get camera by name
+ *
+ * @param name Name of camera
+ *
+ * @return Camera object
+ */
 Camera *CameraGet(const char *name);
 
+/**
+ * @brief Save photo from camera
+ *
+ * @param cam Camera object
+ * @param filename Photo name
+ *
+ * @return True/False as result of saving
+ */
 bool CameraPhotoSave(Camera *cam, const char *filename);
 
 /**
