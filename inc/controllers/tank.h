@@ -122,7 +122,7 @@ void TankGpioSet(Tank *tank, TankGpio id, GpioPin *gpio);
  * @param status Tank controller status
  * @param save Save status to DB
  * 
- * @return Tank controller
+ * @return True/False as result of status setting
  */
 bool TankStatusSet(Tank *tank, bool status, bool save);
 

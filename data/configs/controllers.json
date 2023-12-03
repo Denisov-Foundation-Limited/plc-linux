@@ -66,15 +66,21 @@
         }
     ],
 
-    "water": [
+    "watering": [
         { 
             "name": "Теплица1",
-            "gpio": "none",
+            "gpio": {
+                "valve": "none",
+                "status": {
+                    "led": "none",
+                    "button": "none"
+                }
+            },
             "time": [
-                { "status": true,  "day": 0, "hour": 0, "min": 0, "notify": false },
-                { "status": false, "day": 0, "hour": 0, "min": 0, "notify": false },
-                { "status": true,  "day": 0, "hour": 0, "min": 0, "notify": false },
-                { "status": false, "day": 0, "hour": 0, "min": 0, "notify": false }
+                { "state": true,  "day": 0, "hour": 0, "min": 0, "notify": false },
+                { "state": false, "day": 0, "hour": 0, "min": 0, "notify": false },
+                { "state": true,  "day": 0, "hour": 0, "min": 0, "notify": false },
+                { "state": false, "day": 0, "hour": 0, "min": 0, "notify": false }
             ]
         }
     ]

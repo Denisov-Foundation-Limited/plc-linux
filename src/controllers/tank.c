@@ -100,6 +100,9 @@ static void TankLevelProcess(Tank *tank)
         tank->valve = true;
     }
 
+    LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" valve %s", tank->name, (tank->valve == true) ? "openned" : "closed");
+    LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" pump %s", tank->name, (tank->pump == true) ? "enabled" : "disabled");
+
     if (NotifyLevelCheck(tank, tank->level)) {
         char    msg[STR_LEN];
 
@@ -153,7 +156,7 @@ static int TankStatusThread(void *data)
             if (GpioPinRead(tank->gpio[TANK_GPIO_STATUS_BUTTON])) {
                 pressed = true;
                 if (!TankStatusSet(tank, !TankStatusGet(tank), true)) {
-                    Log(LOG_TYPE_ERROR, "TANK", "Failed to switch tank status");
+                    LogF(LOG_TYPE_ERROR, "TANK", "Failed to switch tank \"%s\" status", tank->name);
                 }
             }
         }
@@ -262,20 +265,6 @@ bool TankStatusGet(Tank *tank)
     return tank->status;
 }
 
-bool TankControllerStart()
-{
-    thrd_t  lvl_th, sts_th;
-
-    Log(LOG_TYPE_INFO, "TANK", "Starting Tank controller");
-
-    thrd_create(&lvl_th, &TankLevelsThread, NULL);
-    thrd_detach(lvl_th);
-    thrd_create(&sts_th, &TankStatusThread, NULL);
-    thrd_detach(sts_th);
-
-    return true;
-}
-
 bool TankPumpSet(Tank *tank, bool status)
 {
     if (!TankStatusSet(tank, false, true)) {
@@ -285,6 +274,7 @@ bool TankPumpSet(Tank *tank, bool status)
 
     GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], status);
     tank->pump = status;
+    LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" pump %s", tank->name, (status == true) ? "enabled" : "disabled");
 
     return true;
 }
@@ -298,6 +288,21 @@ bool TankValveSet(Tank *tank, bool status)
 
     GpioPinWrite(tank->gpio[TANK_GPIO_VALVE], status);
     tank->valve = status;
+    LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" valve %s", tank->name, (status == true) ? "openned" : "closed");
+
+    return true;
+}
+
+bool TankControllerStart()
+{
+    thrd_t  lvl_th, sts_th;
+
+    Log(LOG_TYPE_INFO, "TANK", "Starting Tank controller");
+
+    thrd_create(&lvl_th, &TankLevelsThread, NULL);
+    thrd_detach(lvl_th);
+    thrd_create(&sts_th, &TankStatusThread, NULL);
+    thrd_detach(sts_th);
 
     return true;
 }
