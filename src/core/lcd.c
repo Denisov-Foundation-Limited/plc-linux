@@ -30,45 +30,6 @@ static int      lcd_fd = 0;
 
 /*********************************************************************/
 /*                                                                   */
-/*                          PRIVATE FUNCTION                         */
-/*                                                                   */
-/*********************************************************************/
-
-static int LcdInitThread(void *data)
-{
-    LCD *lcd = (LCD *)data;
-
-#ifdef __arm__
-    pinMode(lcd->rw, OUTPUT);
-    digitalWrite(lcd->rw, LOW);
-    pinMode(lcd->k, OUTPUT);
-    digitalWrite(lcd->k, HIGH);
-
-    for (int i = 0; i < LCD_INIT_RETRIES; i++)
-    {
-        lcd_fd = lcdInit(LCD_ROWS, LCD_COLS, LCD_BITS, lcd->rs, lcd->e, lcd->d4, lcd->d5, lcd->d6, lcd->d7, 0, 0, 0, 0);
-        if (lcd_fd != 0)
-            break;
-        delay(100);
-    }
-
-    if (lcd_fd == 0) {
-        return false;
-    }
-
-    lcdClear(lcd_fd);
-    lcdPosition(lcd_fd, 0, 0);
-    lcdPuts(lcd_fd, LCD_DEFAULT_TEXT_UP);
-    lcdPosition(lcd_fd, 0, 1);
-    lcdPuts(lcd_fd, LCD_DEFAULT_TEXT_DOWN);
-#endif
-
-    lcds = g_list_append(lcds, (void *)lcd);
-    return 0;
-}
-
-/*********************************************************************/
-/*                                                                   */
 /*                          PUBLIC FUNCTIONS                         */
 /*                                                                   */
 /*********************************************************************/
@@ -95,12 +56,45 @@ GList **LcdsGet()
     return &lcds;
 }
 
+LCD *LcdGet(const char *name)
+{
+    for (GList *l = lcds; l != NULL; l = l->next) {
+        LCD *lcd = (LCD *)l->data;
+        if (!strcmp(lcd->name, name)) {
+            return lcd;
+        }
+    }
+    return NULL;
+}
+
 bool LcdAdd(const LCD *lcd)
 {
-    thrd_t  th;
+#ifdef __arm__
+    pinMode(lcd->rw, OUTPUT);
+    digitalWrite(lcd->rw, LOW);
+    pinMode(lcd->k, OUTPUT);
+    digitalWrite(lcd->k, HIGH);
 
-    thrd_create(&th, &LcdInitThread, (void *)lcd);
-    thrd_detach(th);
+    for (int i = 0; i < LCD_INIT_RETRIES; i++)
+    {
+        lcd_fd = lcdInit(LCD_ROWS, LCD_COLS, LCD_BITS, lcd->rs, lcd->e, lcd->d4, lcd->d5, lcd->d6, lcd->d7, 0, 0, 0, 0);
+        if (lcd_fd != 0)
+            break;
+        delay(100);
+    }
+
+    if (lcd_fd == 0) {
+        return false;
+    }
+
+    lcdClear(lcd_fd);
+    lcdPosition(lcd_fd, 0, 0);
+    lcdPuts(lcd_fd, LCD_DEFAULT_TEXT_UP);
+    lcdPosition(lcd_fd, 0, 1);
+    lcdPuts(lcd_fd, LCD_DEFAULT_TEXT_DOWN);
+#endif
+
+    lcds = g_list_append(lcds, (void *)lcd);
 
     return true;
 }

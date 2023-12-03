@@ -18,6 +18,7 @@
 #include <utils/utils.h>
 
 #define ONE_WIRE_PATH               "/sys/bus/w1/devices"
+#define ONE_WIRE_SLAVES_PATH        "/sys/bus/w1/drivers/w1_master_driver/w1_bus_master1/w1_master_slaves"
 
 #define ONE_WIRE_DS18B20_PREFIX     "28"
 #define ONE_WIRE_IBUTTON_PREFIX     "01"

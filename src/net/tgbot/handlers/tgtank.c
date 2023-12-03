@@ -37,9 +37,11 @@ void TgTankStackSelectProcess(const char *token, unsigned from, const char *mess
     for (GList *u = units; u != NULL; u = u->next) {
         StackUnit *unit = (StackUnit *)u->data;
 
-        g_string_append_printf(text, "<b>%s:</b>\n", unit->name);
-
         if (RpcTanksGet(unit->id, &tanks)) {
+            if (g_list_length(tanks) > 0) {
+                g_string_append_printf(text, "<b>%s:</b>\n", unit->name);
+            }
+
             for (GList *s = tanks; s != NULL; s = s->next) {
                 RpcTank *tank = (RpcTank *)s->data;
 

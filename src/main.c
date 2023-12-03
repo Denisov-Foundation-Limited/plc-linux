@@ -44,6 +44,7 @@ int main(const int argc, const char **argv)
                 printf("\t--configs [:path]\tPath to Configs directory\n");
                 printf("\t--db [:path]\t\tPath to Database directory\n");
                 printf("\t--log [:path]\t\tPath to Log directory\n");
+                printf("\t--cam [:path]\t\tPath to Camera photos directory\n");
                 printf("\t--ftest\t\t\tStart factory test\n");
                 return 0;
             }

@@ -79,6 +79,8 @@ static void TankLevelProcess(Tank *tank)
         return;
     }
 
+    LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water level %u%%", tank->name,  tank->level);
+
     if (tank->level == TANK_LEVEL_PERCENT_MIN) {
         GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], false);
         tank->pump = false;
@@ -102,7 +104,6 @@ static void TankLevelProcess(Tank *tank)
         char    msg[STR_LEN];
 
         snprintf(msg, STR_LEN, "БАК+\"%s\":+уровень+воды+%u%%", tank->name,  tank->level);
-        LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water level %u%%", tank->name,  tank->level);
 
         if (!NotifierTelegramSend(msg)) {
             Log(LOG_TYPE_ERROR, "TANK", "Failed to send level notify");
@@ -221,11 +222,7 @@ bool TankStatusSet(Tank *tank, bool status, bool save)
     if (tank->status != status) {
         mtx_lock(&Tanks.sts_mtx);
 
-        if (status) {
-            LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water control enabled", tank->name);
-        } else {
-            LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water control disabled", tank->name);
-        }
+        LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water control %s", tank->name, (status == true) ? "enabled" : "disabled");
 
         tank->status = status;
         GpioPinWrite(tank->gpio[TANK_GPIO_STATUS_LED], status);

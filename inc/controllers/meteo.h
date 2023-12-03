@@ -60,6 +60,15 @@ bool MeteoControllerStart();
 GList **MeteoSensorsGet();
 
 /**
+ * @brief Get meteo sensor by name
+ * 
+ * @param name Meteo sensor name
+ *
+ * @return Meteo sensor object
+ */
+MeteoSensor *MeteoSensorGet(const char *name);
+
+/**
  * @brief Add new meteo sensor
  * 
  * @param sensor New meteo sensor struct

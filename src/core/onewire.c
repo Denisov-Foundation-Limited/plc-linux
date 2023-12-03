@@ -15,66 +15,87 @@
 
 /*********************************************************************/
 /*                                                                   */
-/*                          PUBLIC FUNCTIONS                         */
+/*                            PRIVATE TYPES                          */
 /*                                                                   */
 /*********************************************************************/
 
-bool OneWireDevicesList(GList **devices)
-{
-    GError      *error = NULL;
-    const char  *file_name;
-    GDir        *dir = g_dir_open(ONE_WIRE_PATH, 0, &error);
+typedef enum {
+    ONE_WIRE_IBUTTONS,
+    ONE_WIRE_TEMPS,
+    ONE_WIRE_ALL
+} OneWireDeviceType;
 
-    if (dir == NULL) {
-        g_error_free(error);
+/*********************************************************************/
+/*                                                                   */
+/*                          PRIVATE FUNCTIONS                        */
+/*                                                                   */
+/*********************************************************************/
+
+static bool OneWireDevicesGet(OneWireDeviceType type, GList **devices)
+{
+    char    buf[STR_LEN];
+    FILE    *fd = NULL;
+
+    fd = fopen(ONE_WIRE_SLAVES_PATH, "r");
+    if (fd == NULL) {
         return false;
     }
 
-    while ((file_name = g_dir_read_name(dir))) {
-        char **parts = g_strsplit(file_name, "-", 0);
+    while (fgets(buf, STR_LEN, fd)) {
+        buf[strlen(buf)-1] = '\0';
+
+        char **parts = g_strsplit(buf, "-", 0);
 
         if (parts[0] != NULL && parts[1] != NULL) {
-            OneWireData *data = (OneWireData *)malloc(sizeof(OneWireData));
-            strncpy(data->value, file_name, SHORT_STR_LEN);
-            *devices = g_list_append(*devices, (void *)data);
-        }
+            OneWireData *data = NULL;
 
-        g_strfreev(parts);
-    }
+            switch (type) {
+                case ONE_WIRE_IBUTTONS:
+                    if (!strcmp(parts[0], ONE_WIRE_IBUTTON_PREFIX)) {
+                        data = (OneWireData *)malloc(sizeof(OneWireData));
+                        strncpy(data->value, parts[1], SHORT_STR_LEN);
+                        *devices = g_list_append(*devices, data);
+                    }
+                    break;
 
-    g_dir_close(dir);
+                case ONE_WIRE_TEMPS:
+                    if (!strcmp(parts[0], ONE_WIRE_DS18B20_PREFIX)) {
+                        data = (OneWireData *)malloc(sizeof(OneWireData));
+                        strncpy(data->value, parts[1], SHORT_STR_LEN);
+                        *devices = g_list_append(*devices, data);
+                    }
+                    break;
 
-    return true;
-}
-
-bool OneWireKeysRead(GList **keys)
-{
-    GError      *error = NULL;
-    const char  *file_name;
-    GDir        *dir = g_dir_open(ONE_WIRE_PATH, 0, &error);
-
-    if (dir == NULL) {
-        g_error_free(error);
-        return false;
-    }
-
-    while ((file_name = g_dir_read_name(dir))) {
-        char **parts = g_strsplit(file_name, "-", 0);
-
-        if (parts[0] != NULL && parts[1] != NULL) {
-            if (!strcmp(parts[0], ONE_WIRE_IBUTTON_PREFIX)) {
-                OneWireData *data = (OneWireData *)malloc(sizeof(OneWireData));
-                strncpy(data->value, parts[1], SHORT_STR_LEN);
-                *keys = g_list_append(*keys, data);
+                case ONE_WIRE_ALL:
+                    data = (OneWireData *)malloc(sizeof(OneWireData));
+                    strncpy(data->value, parts[1], SHORT_STR_LEN);
+                    *devices = g_list_append(*devices, data);
+                    break;
             }
         }
 
         g_strfreev(parts);
     }
 
-    g_dir_close(dir);
+    fclose(fd);
 
     return true;
+}
+
+/*********************************************************************/
+/*                                                                   */
+/*                          PUBLIC FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
+bool OneWireDevicesList(GList **devices)
+{
+    return OneWireDevicesGet(ONE_WIRE_ALL, devices);
+}
+
+bool OneWireKeysRead(GList **keys)
+{
+    return OneWireDevicesGet(ONE_WIRE_IBUTTONS, keys);
 }
 
 bool OneWireTempRead(const char *id, float *temp)

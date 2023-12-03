@@ -56,6 +56,7 @@ set(SRC_LIST ${SRC_LIST} src/stack/stack.c)
 set(SRC_LIST ${SRC_LIST} src/stack/rpc.c)
 set(SRC_LIST ${SRC_LIST} src/ftest/ftest.c)
 set(SRC_LIST ${SRC_LIST} src/plc/plc.c)
+set(SRC_LIST ${SRC_LIST} src/plc/menu.c)
 set(SRC_LIST ${SRC_LIST} src/main.c)
 
 add_executable(${PROJECT_NAME} ${SRC_LIST})

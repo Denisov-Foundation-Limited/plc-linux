@@ -56,7 +56,7 @@ bool CameraPhotoSave(Camera *cam, const char *filename)
 {
     char    cmd[STR_LEN];
     char    full_path[STR_LEN];
-    
+
     snprintf(full_path, STR_LEN, "%s%s", Cameras.path, filename);
 
     if (cam->type == CAM_TYPE_IP) {
@@ -72,6 +72,7 @@ bool CameraPhotoSave(Camera *cam, const char *filename)
             return true;
         }
     }
+
     return false;
 }
 
@@ -90,8 +91,7 @@ GList **CamerasGet()
     return &Cameras.cameras;
 }
 
-bool CameraAdd(const Camera *cam)
+void CameraAdd(const Camera *cam)
 {
     Cameras.cameras = g_list_append(Cameras.cameras, (void *)cam);
-    return true;
 }

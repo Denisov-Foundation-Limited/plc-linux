@@ -60,6 +60,15 @@ LCD *LcdNew(const char *name, unsigned rs, unsigned rw, unsigned e, unsigned k, 
 GList **LcdsGet();
 
 /**
+ * @brief Get LCD object by name
+ * 
+ * @param name LCD name
+ * 
+ * @return LCD object
+ */
+LCD *LcdGet(const char *name);
+
+/**
  * @brief Add new I2C LCD module
  * 
  * @param lcd LCD module struct

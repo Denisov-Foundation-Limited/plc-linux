@@ -36,5 +36,33 @@
 
     "cam": [
         { "name": "Улица", "type": "ipcam", "ipcam": { "ip": "192.168.3.100", "stream": 0, "login": "admin", "password": "123456" } }
-    ]
+    ],
+
+    "menu": {
+        "lcd": "main",
+        "gpio": {
+            "up": "cpu-btn-up",
+            "middle": "cpu-btn-red",
+            "down": "cpu-btn-dn"
+        },
+        "levels": [
+            {
+                "name": "main",
+                "values": [
+                    { "row": 0, "col": 0,  "alias": "STR", "ctrl": "meteo", "meteo": "Улица"   },
+                    { "row": 0, "col": 11, "alias": "",    "ctrl": "time",  "time": "now"      },
+                    { "row": 1, "col": 0,  "alias": "CAB", "ctrl": "meteo", "meteo": "Кабинет" },
+                    { "row": 1, "col": 8,  "alias": "LVL", "ctrl": "tank",  "tank":  "Еврокуб" }
+                ]
+            },
+            {
+                "name": "meteo",
+                "values": [
+                    { "row": 0, "col": 0,  "alias": "STR", "ctrl": "meteo", "meteo": "Улица"   },
+                    { "row": 0, "col": 9, "alias": "CAB", "ctrl": "meteo",  "meteo": "Кабинет"      },
+                    { "row": 1, "col": 0,  "alias": "WTR", "ctrl": "meteo", "meteo": "Бак" }
+                ]
+            }
+        ]
+    }
 }

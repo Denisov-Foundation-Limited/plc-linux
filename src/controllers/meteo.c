@@ -105,6 +105,17 @@ bool MeteoControllerStart()
     return true;
 }
 
+MeteoSensor *MeteoSensorGet(const char *name)
+{
+    for (GList *v = Meteo.sensors; v != NULL; v = v->next) {
+        MeteoSensor *sensor = (MeteoSensor *)v->data;
+        if (!strcmp(sensor->name, name)) {
+            return sensor;
+        }
+    }
+    return NULL;
+}
+
 GList **MeteoSensorsGet()
 {
     return &Meteo.sensors;

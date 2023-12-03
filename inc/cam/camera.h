@@ -94,9 +94,7 @@ bool CameraPhotoSave(Camera *cam, const char *filename);
  * @brief Add new Camera module
  * 
  * @param cam Camera module object
- * 
- * @return true/false as result of initialization of module
  */
-bool CameraAdd(const Camera *cam);
+void CameraAdd(const Camera *cam);
 
 #endif /* __CAM_H__ */

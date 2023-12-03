@@ -16,6 +16,7 @@
 
 #include <utils/log.h>
 #include <utils/utils.h>
+#include <plc/plc.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -55,12 +56,14 @@ bool LogSaveToFile(const char *date, const char *msg)
 
 GString *LogMakeMsg(const LogType type, const char *module, const char *msg)
 {
-    struct tm   *cur_time = UtilsLinuxTimeGet();
-    GString     *text = g_string_new("");
+    PlcTime time;
+    GString *text = g_string_new("");
 
-    g_string_append_printf(text, "[%d.%d.%d][%d:%d:%d]",
-        cur_time->tm_year, cur_time->tm_mon, cur_time->tm_mday,
-        cur_time->tm_hour, cur_time->tm_min, cur_time->tm_sec
+    PlcTimeGet(&time);
+
+    g_string_append_printf(text, "[%4d.%2d.%2d][%2d:%2d:%2d]",
+       time.year, time.month, time.day,
+       time.hour, time.min, time.sec
     );
 
     g_string_append_printf(text, "[%s]", module);
@@ -95,11 +98,13 @@ void LogPathSet(const char *path)
 
 bool Log(const LogType type, const char *module, const char *msg)
 {
-    struct tm   *cur_time = UtilsLinuxTimeGet();
+    PlcTime time;
     char        date_str[STR_LEN];
     GString     *text = NULL;
 
-    snprintf(date_str, STR_LEN, "%d.%d.%d.log", cur_time->tm_year, cur_time->tm_mon, cur_time->tm_mday);
+    PlcTimeGet(&time);
+
+    snprintf(date_str, STR_LEN, "%4d.%2d.%2d.log", time.year, time.month, time.day);
 
     text = LogMakeMsg(type, module, msg);
     printf("%s", text->str);

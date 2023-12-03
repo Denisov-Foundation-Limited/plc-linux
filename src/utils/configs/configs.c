@@ -32,6 +32,8 @@
 #include <scenario/scenario.h>
 #include <cam/camera.h>
 #include <plc/plc.h>
+#include <plc/menu.h>
+#include <controllers/meteo.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -257,8 +259,8 @@ static bool PlcRead(const char *path)
 {
     char            full_path[STR_LEN];
     json_error_t    error;
-    size_t          index;
-    json_t          *value;
+    size_t          index, ext_index;
+    json_t          *value, *ext_value;
     GpioPin         *gpio = NULL;
 
     snprintf(full_path, STR_LEN, "%s%s", path, CONFIGS_PLC_FILE);
@@ -379,6 +381,111 @@ static bool PlcRead(const char *path)
 
         CameraAdd(cam);
         LogF(LOG_TYPE_INFO, "CONFIGS", "Add Camera: \"%s\"", cam->name);
+    }
+
+    /**
+     * Menu configs
+     */
+
+    json_t *jmenu = json_object_get(data, "menu");
+    LogF(LOG_TYPE_INFO, "CONFIGS", "Add Menu LCD \"%s\"", json_string_value(json_object_get(jmenu, "lcd")));
+
+    LCD *lcd = LcdGet(json_string_value(json_object_get(jmenu, "lcd")));
+    if (lcd == NULL) {
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "LCD of menu not found \"%s\"",
+            json_string_value(json_object_get(jmenu, "lcd"))
+        );
+        return false;
+    }
+    MenuLcdSet(lcd);
+
+    Log(LOG_TYPE_INFO, "CONFIGS", "Add Menu GPIOs");
+
+    json_t *jgpio = json_object_get(jmenu, "gpio");
+
+    gpio = GpioPinGet(json_string_value(json_object_get(jgpio, "up")));
+    if (gpio == NULL) {
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "Menu button error: GPIO \"%s\" not found",
+            json_string_value(json_object_get(jgpio, "up")));
+        return false;
+    }
+    MenuGpioSet(MENU_GPIO_UP, gpio);
+
+    gpio = GpioPinGet(json_string_value(json_object_get(jgpio, "middle")));
+    if (gpio == NULL) {
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "Menu button error: GPIO \"%s\" not found",
+            json_string_value(json_object_get(jgpio, "middle")));
+        return false;
+    }
+    MenuGpioSet(MENU_GPIO_MIDDLE, gpio);
+
+    gpio = GpioPinGet(json_string_value(json_object_get(jgpio, "down")));
+    if (gpio == NULL) {
+        LogF(LOG_TYPE_ERROR, "CONFIGS", "Menu button error: GPIO \"%s\" not found",
+            json_string_value(json_object_get(jgpio, "down")));
+        return false;
+    }
+    MenuGpioSet(MENU_GPIO_DOWN, gpio);
+
+    json_array_foreach(json_object_get(jmenu, "levels"), index, value) {
+        MenuLevel *level = MenuLevelNew(json_string_value(json_object_get(value, "name")));
+
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Menu Level \"%s\"", level->name);
+
+        json_array_foreach(json_object_get(value, "values"), ext_index, ext_value) {
+            MenuController ctrl;
+
+            if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "meteo")) {
+                ctrl = MENU_CTRL_METEO;
+            } else if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "time")) {
+                ctrl = MENU_CTRL_TIME;
+            } else if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "tank")) {
+                ctrl = MENU_CTRL_TANK;
+            } else {
+                LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown ctrl type");
+                return false;
+            }
+
+            LogF(LOG_TYPE_INFO, "CONFIGS", "Add Menu value ctrl: \"%s\" alias \"%s\"",
+                json_string_value(json_object_get(ext_value, "ctrl")),
+                json_string_value(json_object_get(ext_value, "alias"))
+            );
+
+            MenuValue *value = MenuValueNew(
+                json_integer_value(json_object_get(ext_value, "row")),
+                json_integer_value(json_object_get(ext_value, "col")),
+                json_string_value(json_object_get(ext_value, "alias")),
+                ctrl
+            );
+
+            if (ctrl == MENU_CTRL_METEO) {
+                MeteoSensor *sensor = MeteoSensorGet(
+                    json_string_value(json_object_get(ext_value, "meteo"))
+                );
+
+                if (sensor == NULL) {
+                    LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown menu meteo sensor");
+                    return false;
+                }
+
+                value->meteo.sensor = sensor;
+            } else if (ctrl == MENU_CTRL_TANK) {
+                Tank *tank = TankGet(
+                    json_string_value(json_object_get(ext_value, "tank"))
+                );
+
+                if (tank == NULL) {
+                    LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown menu tank");
+                    return false;
+                }
+
+                value->tank.tank = tank;
+            }
+
+            MenuValueAdd(level, value);
+        }
+
+        MenuLevelAdd(level);
     }
 
     json_decref(data);

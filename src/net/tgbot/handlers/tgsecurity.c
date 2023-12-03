@@ -87,9 +87,11 @@ void TgSecurityProcess(const char *token, unsigned from, const char *message)
     for (GList *u = units; u != NULL; u = u->next) {
         StackUnit *unit = (StackUnit *)u->data;
 
-        g_string_append_printf(text, "<b>%s:</b>\n", unit->name);
-
         if (RpcSecuritySensorsGet(unit->id, &sensors)) {
+            if (g_list_length(sensors) > 0) {
+                g_string_append_printf(text, "<b>%s:</b>\n", unit->name);
+            }
+
             for (GList *c = sensors; c != NULL; c = c->next) {
                 RpcSecuritySensor *sensor = (RpcSecuritySensor *)c->data;
 
