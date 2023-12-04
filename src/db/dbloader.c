@@ -17,6 +17,7 @@
 #include <controllers/security.h>
 #include <controllers/socket.h>
 #include <controllers/tank.h>
+#include <controllers/waterer.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -231,6 +232,71 @@ static bool DatabaseTankLoad()
     return true;
 }
 
+static bool DatabaseWatererLoad()
+{
+    int         status = 0;
+    bool        exists = false;
+    Database    db;
+    char        sql[STR_LEN];
+
+    if (!DatabaseOpen(&db, WATERER_DB_FILE)) {
+        DatabaseClose(&db);
+        Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to load Waterer database");
+        return false;
+    }
+
+    if (!DatabaseCreate(&db, "waterer", "id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, status INTEGER")) {
+        DatabaseClose(&db);
+        Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to create Waterer table");
+        return false;
+    }
+
+    for (GList *t = *WaterersGet(); t != NULL; t = t->next) {
+        Waterer *waterer = (Waterer *)t->data;
+        status = 0;
+
+        snprintf(sql, STR_LEN, "name=\"%s\"", waterer->name);
+
+        if (!DatabaseRowExists(&db, "waterer", sql, &exists)) {
+            LogF(LOG_TYPE_ERROR, "DBLOADER", "Failed to check Waterer \"%s\" status", waterer->name);
+            DatabaseClose(&db);
+            return false;
+        }
+
+        if (exists) {
+            snprintf(sql, STR_LEN, "name=\"%s\"", waterer->name);
+
+            if (DatabaseFindOne(&db, "waterer", "status", sql, DATABASE_COL_TYPE_INT, (void *)&status)) {
+                LogF(LOG_TYPE_INFO, "DBLOADER", "Loaded status for Waterer \"%s\" is \"%d\"", waterer->name, status);
+            } else {
+                LogF(LOG_TYPE_ERROR, "DBLOADER", "Failed to find Waterer \"%s\" status", waterer->name);
+                DatabaseClose(&db);
+                return false;
+            }
+        } else {
+            snprintf(sql, STR_LEN, "\"%s\", %d", waterer->name, 0);
+
+            if (DatabaseInsert(&db, "waterer", "name, status", sql)) {
+                LogF(LOG_TYPE_INFO, "DBLOADER", "Created status for Waterer controller is \"%d\"", status);
+            } else {
+                Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to insert Waterer controller status");
+                DatabaseClose(&db);
+                return false;
+            }
+        }
+
+        if (!WatererStatusSet(waterer, (bool)status, false)) {
+            LogF(LOG_TYPE_ERROR, "DBLOADER", "Failed to set Waterer \"%s\" status", waterer->name);
+            DatabaseClose(&db);
+            return false;
+        }
+    }
+
+    DatabaseClose(&db);
+
+    return true;
+}
+
 /*********************************************************************/
 /*                                                                   */
 /*                          PUBLIC FUNCTIONS                         */
@@ -251,6 +317,11 @@ bool DatabaseLoaderLoad()
 
     if (!DatabaseTankLoad()) {
         Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to load tank states from DB");
+        return false;
+    }
+
+    if (!DatabaseWatererLoad()) {
+        Log(LOG_TYPE_ERROR, "DBLOADER", "Failed to load waterer states from DB");
         return false;
     }
 

@@ -156,6 +156,18 @@ void TgMenuBack(unsigned from)
                     menu->level = TG_MENU_LVL_TANK_SELECT;
                     break;
 
+                case TG_MENU_LVL_WATERER_STACK_SELECT:
+                    menu->level = TG_MENU_LVL_MAIN;
+                    break;
+
+                case TG_MENU_LVL_WATERER_SELECT:
+                    menu->level = TG_MENU_LVL_WATERER_STACK_SELECT;
+                    break;
+
+                case TG_MENU_LVL_WATERER:
+                    menu->level = TG_MENU_LVL_WATERER_SELECT;
+                    break;
+
                 case TG_MENU_LVL_MAIN:
                 case TG_MENU_LVL_SECURITY_SELECT:
                     break;

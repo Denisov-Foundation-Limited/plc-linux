@@ -26,6 +26,7 @@
 #include <net/tgbot/handlers/tgmain.h>
 #include <net/tgbot/handlers/tgtank.h>
 #include <net/tgbot/handlers/tgcam.h>
+#include <net/tgbot/handlers/tgwaterer.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -86,6 +87,8 @@ static void MessageProcess(unsigned from, const char *message)
                 TgMenuLevelSet(from, TG_MENU_LVL_SOCKET_SELECT);
             } else if (!strcmp(message, "Бак")) {
                 TgMenuLevelSet(from, TG_MENU_LVL_TANK_STACK_SELECT);
+            } else if (!strcmp(message, "Полив")) {
+                TgMenuLevelSet(from, TG_MENU_LVL_WATERER_STACK_SELECT);
             }
             break;
 
@@ -122,6 +125,22 @@ static void MessageProcess(unsigned from, const char *message)
                 TgMenuLevelSet(from, TG_MENU_LVL_TANK);
             }
             break;
+
+        case TG_MENU_LVL_WATERER_STACK_SELECT:
+            if (strcmp(message, "Назад")) {
+                if (StackUnitNameCheck(message)) {
+                    TgMenuUnitSet(from, StackUnitNameGet(message));
+                    TgMenuLevelSet(from, TG_MENU_LVL_WATERER_SELECT);
+                }
+            }
+            break;
+
+        case TG_MENU_LVL_WATERER_SELECT:
+            if (strcmp(message, "Назад")) {
+                TgMenuDataSet(from, message);
+                TgMenuLevelSet(from, TG_MENU_LVL_WATERER);
+            }
+            break;
         
         case TG_MENU_LVL_CAM:
         case TG_MENU_LVL_METEO:
@@ -130,6 +149,7 @@ static void MessageProcess(unsigned from, const char *message)
         case TG_MENU_LVL_SOCKET:
         case TG_MENU_LVL_LIGHT:
         case TG_MENU_LVL_TANK:
+        case TG_MENU_LVL_WATERER:
             break;
     }
 
@@ -176,6 +196,18 @@ static void MessageProcess(unsigned from, const char *message)
 
         case TG_MENU_LVL_TANK:
             TgTankProcess(TgBot.token, from, message);
+            break;
+
+        case TG_MENU_LVL_WATERER_STACK_SELECT:
+            TgWatererStackSelectProcess(TgBot.token, from, message);
+            break;
+
+        case TG_MENU_LVL_WATERER_SELECT:
+            TgWatererSelectProcess(TgBot.token, from, message);
+            break;
+
+        case TG_MENU_LVL_WATERER:
+            TgWatererProcess(TgBot.token, from, message);
             break;
 
         case TG_MENU_LVL_SECURITY_SELECT:

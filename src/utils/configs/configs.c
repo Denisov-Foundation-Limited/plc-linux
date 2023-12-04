@@ -20,6 +20,7 @@
 #include <utils/configs/cfgmeteo.h>
 #include <utils/configs/cfgsocket.h>
 #include <utils/configs/cfgtank.h>
+#include <utils/configs/cfgwaterer.h>
 #include <core/gpio.h>
 #include <core/extenders.h>
 #include <core/lcd.h>
@@ -248,6 +249,12 @@ static bool ControllersRead(const char *path)
     if (!CfgTankLoad(data)) {
         json_decref(data);
         Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load tank configs");
+        return false;
+    }
+
+    if (!CfgWatererLoad(data)) {
+        json_decref(data);
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load waterer configs");
         return false;
     }
 

@@ -124,4 +124,29 @@ bool RpcCameraPhotoSave(unsigned unit, const char *name, const char *filename);
 bool RpcCamerasGet(unsigned unit, GList **cams);
 bool RpcCameraPathGet(unsigned unit, char *path);
 
+/*********************************************************************/
+/*                                                                   */
+/*                           WATERER  FUNCTIONS                      */
+/*                                                                   */
+/*********************************************************************/
+
+typedef struct {
+    unsigned    day;
+    unsigned    hour;
+    unsigned    min;
+    bool        state;
+} RpcWatererTime;
+
+typedef struct {
+    char    name[SHORT_STR_LEN];
+    bool    status;
+    bool    valve;
+    GList   *times;
+} RpcWaterer;
+
+bool RpcWatererStatusSet(unsigned unit, const char *name, bool status);
+bool RpcWatererPumpSet(unsigned unit, const char *name, bool status);
+bool RpcWatererValveSet(unsigned unit, const char *name, bool status);
+bool RpcWaterersGet(unsigned unit, GList **waterers);
+
 #endif /* __RPC_H__ */

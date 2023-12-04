@@ -61,7 +61,7 @@ GString *LogMakeMsg(const LogType type, const char *module, const char *msg)
 
     PlcTimeGet(&time);
 
-    g_string_append_printf(text, "[%4d.%2d.%2d][%2d:%2d:%2d]",
+    g_string_append_printf(text, "[%4d.%d.%d][%d:%d:%d]",
        time.year, time.month, time.day,
        time.hour, time.min, time.sec
     );
@@ -104,7 +104,7 @@ bool Log(const LogType type, const char *module, const char *msg)
 
     PlcTimeGet(&time);
 
-    snprintf(date_str, STR_LEN, "%4d.%2d.%2d.log", time.year, time.month, time.day);
+    snprintf(date_str, STR_LEN, "%d.%d.%d.log", time.year, time.month, time.day);
 
     text = LogMakeMsg(type, module, msg);
     printf("%s", text->str);

@@ -66,7 +66,7 @@
         }
     ],
 
-    "watering": [
+    "waterer": [
         { 
             "name": "Теплица1",
             "gpio": {
@@ -76,7 +76,7 @@
                     "button": "none"
                 }
             },
-            "time": [
+            "times": [
                 { "state": true,  "day": 0, "hour": 0, "min": 0, "notify": false },
                 { "state": false, "day": 0, "hour": 0, "min": 0, "notify": false },
                 { "state": true,  "day": 0, "hour": 0, "min": 0, "notify": false },

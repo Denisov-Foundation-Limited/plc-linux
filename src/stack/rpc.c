@@ -11,6 +11,7 @@
 #include <stack/rpc.h>
 #include <controllers/security.h>
 #include <controllers/tank.h>
+#include <controllers/waterer.h>
 #include <utils/log.h>
 #include <controllers/meteo.h>
 #include <controllers/socket.h>
@@ -747,4 +748,178 @@ bool RpcCameraPathGet(unsigned unit, char *path)
         return true;
     }
     return false;
+}
+
+/*********************************************************************/
+/*                                                                   */
+/*                           TANK  FUNCTIONS                         */
+/*                                                                   */
+/*********************************************************************/
+
+bool RpcWatererStatusSet(unsigned unit, const char *name, bool status)
+{
+    char            buf[BUFFER_LEN_MAX];
+    char            url[STR_LEN];
+    json_error_t    error;
+
+    if (unit == RPC_DEFAULT_UNIT) {
+        Waterer *waterer = WatererGet(name);
+        if (waterer == NULL) {
+            return false;
+        }
+        return WatererStatusSet(waterer, status, true);
+    }
+
+    StackUnit *u = StackUnitGet(unit);
+    if (u == NULL) {
+        return false;
+    }
+
+    snprintf(url, STR_LEN, "http://%s:%d/api/%s/waterer?cmd=status_set&name=%s&status=%s",
+            u->ip, u->port, SERVER_API_VER, name, (status == true) ? "true" : "false");
+    memset(buf, 0x0, BUFFER_LEN_MAX);
+
+    if (!WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
+        return false;
+    }
+
+    json_t *root = json_loads(buf, 0, &error);
+    if (root == NULL) {
+        return false;
+    }
+
+    if (!json_boolean_value(json_object_get(root, "result"))) {
+        json_decref(root);
+        return false;
+    }
+
+    json_decref(root);
+    return true;
+}
+
+bool RpcWaterersGet(unsigned unit, GList **waterers)
+{
+    char            buf[BUFFER_LEN_MAX];
+    char            url[STR_LEN];
+    json_error_t    error;
+    size_t          index, ext_index;
+    json_t          *value, *ext_value;
+
+    if (waterers == NULL) {
+        return false;
+    }
+
+    if (unit == RPC_DEFAULT_UNIT) {
+        for (GList *c = *WaterersGet(); c != NULL; c = c->next) {
+            Waterer *waterer = (Waterer *)c->data;
+
+            RpcWaterer *t = (RpcWaterer *)malloc(sizeof(RpcWaterer));
+            strncpy(t->name, waterer->name, SHORT_STR_LEN);
+            t->status = waterer->status;
+            t->valve = waterer->valve;
+            t->times = NULL;
+
+            for (GList *ts = waterer->times; ts != NULL; ts = ts->next) {
+                WateringTime *wt = (WateringTime *)ts->data;
+                
+                RpcWatererTime *tm = (RpcWatererTime *)malloc(sizeof(RpcWatererTime));
+                tm->day = wt->time.dow;
+                tm->hour = wt->time.hour;
+                tm->min = wt->time.min;
+                tm->state = wt->state;
+                t->times = g_list_append(t->times, (void *)tm);
+            }
+
+            *waterers = g_list_append(*waterers, (void *)t);
+        }
+        return true;
+    }
+
+    StackUnit *u = StackUnitGet(unit);
+    if (u == NULL) {
+        return false;
+    }
+
+    snprintf(url, STR_LEN, "http://%s:%d/api/%s/waterer?cmd=waterers_get", u->ip, u->port, SERVER_API_VER);
+    memset(buf, 0x0, BUFFER_LEN_MAX);
+
+    if (!WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
+        return false;
+    }
+
+    json_t *root = json_loads(buf, 0, &error);
+    if (root == NULL) {
+        return false;
+    }
+
+    if (!json_boolean_value(json_object_get(root, "result"))) {
+        json_decref(root);
+        return false;
+    }
+
+    json_array_foreach(json_object_get(root, "waterers"), index, value) {
+        RpcWaterer *t = (RpcWaterer *)malloc(sizeof(RpcWaterer));
+
+        strncpy(t->name, json_string_value(json_object_get(value, "name")), SHORT_STR_LEN);
+        t->status = json_boolean_value(json_object_get(value, "status"));
+        t->valve = json_boolean_value(json_object_get(value, "valve"));
+        t->times = NULL;
+
+        json_array_foreach(json_object_get(value, "times"), ext_index, ext_value) {
+            RpcWaterer *t = (RpcWaterer *)malloc(sizeof(RpcWaterer));
+
+            RpcWatererTime *tm = (RpcWatererTime *)malloc(sizeof(RpcWatererTime));
+            tm->day = json_integer_value(json_object_get(ext_value, "day"));
+            tm->hour = json_integer_value(json_object_get(ext_value, "hour"));
+            tm->min = json_integer_value(json_object_get(ext_value, "min"));
+            tm->state = json_boolean_value(json_object_get(ext_value, "state"));
+            t->times = g_list_append(t->times, (void *)tm);
+        }
+
+        *waterers = g_list_append(*waterers, (void *)t);
+    }
+
+    json_decref(root);
+    return true;
+}
+
+bool RpcWatererValveSet(unsigned unit, const char *name, bool status)
+{
+    char            buf[BUFFER_LEN_MAX];
+    char            url[STR_LEN];
+    json_error_t    error;
+
+    if (unit == RPC_DEFAULT_UNIT) {
+        Waterer *waterer = WatererGet(name);
+        if (waterer == NULL) {
+            return false;
+        }
+        return WatererValveSet(waterer, status);
+    }
+
+    StackUnit *u = StackUnitGet(unit);
+    if (u == NULL) {
+        return false;
+    }
+
+    snprintf(url, STR_LEN, "http://%s:%d/api/%s/waterer?cmd=valve_set&name=%s&status=%s",
+            u->ip, u->port, SERVER_API_VER, name, (status == true) ? "true" : "false");
+    memset(buf, 0x0, BUFFER_LEN_MAX);
+
+    if (!WebClientRequest(WEB_REQ_GET, url, NULL, buf)) {
+        return false;
+    }
+
+    json_t *root = json_loads(buf, 0, &error);
+    if (root == NULL) {
+        return false;
+    }
+
+    if (!json_boolean_value(json_object_get(root, "result"))) {
+        json_decref(root);
+        return false;
+    }
+
+    json_decref(root);
+    return true;
 }

@@ -23,6 +23,7 @@
 #include <net/web/handlers/meteoh.h>
 #include <net/web/handlers/indexh.h>
 #include <net/web/handlers/tankh.h>
+#include <net/web/handlers/watererh.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -87,6 +88,10 @@ static bool Process(int socketId)
             } else if (!strcmp(query, "/api/" SERVER_API_VER "/tank")) {
                 if (!HandlerTankProcess(&req, &params)) {
                     Log(LOG_TYPE_ERROR, "SERVER", "Failed to process Tank controller get handler");
+                }
+            } else if (!strcmp(query, "/api/" SERVER_API_VER "/waterer")) {
+                if (!HandlerWatererProcess(&req, &params)) {
+                    Log(LOG_TYPE_ERROR, "SERVER", "Failed to process Waterer controller get handler");
                 }
             } else {
                 FCGX_PutS("Content-type: text/html\r\n", req.out);

@@ -52,6 +52,15 @@ typedef struct {
 Waterer *WatererNew(const char *name);
 
 /**
+ * @brief Make new Waterer object
+ * 
+ * @param name Name of waterer
+ * 
+ * @return Waterer object
+ */
+Waterer *WatererGet(const char *name);
+
+/**
  * @brief Make new WateringTime object
  * 
  * @param time Time when switch Valve state

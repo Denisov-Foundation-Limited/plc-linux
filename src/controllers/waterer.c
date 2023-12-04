@@ -141,6 +141,17 @@ Waterer *WatererNew(const char *name)
     return wtr;
 }
 
+Waterer *WatererGet(const char *name)
+{
+    for (GList *s = Watering.waterers; s != NULL; s = s->next) {
+        Waterer *wtr = (Waterer *)s->data;
+        if (!strcmp(wtr->name, name)) {
+            return wtr;
+        }
+    }
+    return NULL;
+}
+
 WateringTime *WateringTimeNew(PlcTime time, bool state, bool notify)
 {
     WateringTime *t = (WateringTime *)malloc(sizeof(WateringTime));
