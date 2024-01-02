@@ -120,3 +120,38 @@ bool WebClientPhotoRequest(const char *url, unsigned chat_id, const char *file, 
 
     return true;
 }
+
+bool WebClientDocumentRequest(const char *url, unsigned chat_id, const char *file, char *out)
+{
+    CURL                *curl;
+    CURLcode            ret = -1;
+    curl_mime           *form = NULL;
+    curl_mimepart       *field = NULL;
+    struct curl_slist*  headerlist = NULL;
+    static const char   buf[] = "Expect:";
+
+    curl_global_init(CURL_GLOBAL_ALL);
+
+    curl = curl_easy_init();
+    if (curl) {
+        form = curl_mime_init(curl);
+        field = curl_mime_addpart(form);
+        curl_mime_name(field, "document");
+        curl_mime_filedata(field, file);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, &WebOutputWrite);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, out);
+        headerlist = curl_slist_append(headerlist, buf);
+        curl_easy_setopt(curl, CURLOPT_URL, url);
+        curl_easy_setopt(curl, CURLOPT_MIMEPOST, form);
+        ret = curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+        curl_mime_free(form);
+        curl_slist_free_all(headerlist);
+    }
+
+    if (ret != CURLE_OK) {
+        return false;
+    }
+
+    return true;
+}

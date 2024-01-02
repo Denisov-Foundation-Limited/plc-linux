@@ -20,6 +20,7 @@
 #include <controllers/meteo.h>
 #include <core/lcd.h>
 #include <controllers/tank.h>
+#include <controllers/socket.h>
 
 typedef enum {
     MENU_GPIO_UP,
@@ -31,12 +32,21 @@ typedef enum {
 typedef enum {
     MENU_CTRL_METEO,
     MENU_CTRL_TIME,
-    MENU_CTRL_TANK
+    MENU_CTRL_TANK,
+    MENU_CTRL_SOCKET,
+    MENU_CTRL_LIGHT,
+    MENU_CTRL_SECURITY
 } MenuController;
 
 typedef enum {
     MENU_TIME_NOW
 } MenuTimeType;
+
+typedef enum {
+    MENU_TANK_PUMP,
+    MENU_TANK_VALVE,
+    MENU_TANK_LEVEL
+} MenuTankParam;
 
 typedef struct {
     MeteoSensor  *sensor;
@@ -47,8 +57,13 @@ typedef struct {
 } MenuTimeCtrl;
 
 typedef struct {
-    Tank    *tank;
+    Tank            *tank;
+    MenuTankParam   param;
 } MenuTankCtrl;
+
+typedef struct {
+    Socket    *sock;
+} MenuSocketCtrl;
 
 typedef struct {
     unsigned        row;
@@ -58,6 +73,8 @@ typedef struct {
     MenuMeteoCtrl   meteo;
     MenuTimeCtrl    time;
     MenuTankCtrl    tank;
+    MenuSocketCtrl  socket;
+    MenuSocketCtrl  light;
 } MenuValue;
 
 typedef struct {

@@ -43,4 +43,16 @@ bool WebClientRequest(WebRequestType type, const char *url, const char *post, ch
  */
 bool WebClientPhotoRequest(const char *url, unsigned chat_id, const char *file, const char *caption, char *out);
 
+/**
+ * @brief HTTP telegram document request
+ * 
+ * @param url Request URL
+ * @param chat_id Telegram user ID
+ * @param file Path to photo file
+ * @param out Output buffer
+ * 
+ * @return True/False as result of request
+ */
+bool WebClientDocumentRequest(const char *url, unsigned chat_id, const char *file, char *out);
+
 #endif /* __WEB_CLIENT_H__ */

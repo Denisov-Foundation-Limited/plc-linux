@@ -47,7 +47,11 @@ void TgMeteoProcess(const char *token, unsigned from, const char *message)
 
                 switch (sensor->type) {
                     case RPC_METEO_SENSOR_DS18B20:
-                        g_string_append_printf(text, "        %s: <b>%.1f°</b>\n", sensor->name, sensor->ds18b20.temp);
+                        if (sensor->ds18b20.temp == RPC_METEO_BAD_VAL) {
+                            g_string_append_printf(text, "        %s: <b>Ошибка</b>\n", sensor->name);
+                        } else {
+                            g_string_append_printf(text, "        %s: <b>%.1f°</b>\n", sensor->name, sensor->ds18b20.temp);
+                        }
                         break;
                 }
 

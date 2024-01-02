@@ -112,7 +112,7 @@ void TgWatererSelectProcess(const char *token, unsigned from, const char *messag
                 g_string_append_printf(text, "        Кран: <b>Закрыт</b>\n");
             }
 
-            g_string_append_printf(text, "        \n<b>Расписание:</b>\n");
+            g_string_append_printf(text, "\n        <b>Расписание:</b>\n");
             for (GList *t = wtr->times; t != NULL; t = t->next) {
                 RpcWatererTime *tm = (RpcWatererTime *)t->data;
 
@@ -231,7 +231,7 @@ void TgWatererProcess(const char *token, unsigned from, const char *message)
                 }
             }
 
-            g_string_append_printf(text, "        \n<b>Расписание:</b>\n");
+            g_string_append_printf(text, "\n        <b>Расписание:</b>\n");
             for (GList *t = wtr->times; t != NULL; t = t->next) {
                 RpcWatererTime *tm = (RpcWatererTime *)t->data;
 

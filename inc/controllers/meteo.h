@@ -18,6 +18,7 @@
 #include <utils/utils.h>
 
 #define METEO_SENSOR_TRIES  5
+#define METEO_BAD_VAL       -127
 
 typedef enum {
     METEO_SENSOR_DS18B20

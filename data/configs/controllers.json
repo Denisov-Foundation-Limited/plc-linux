@@ -48,7 +48,7 @@
 
     "tank": [
         {
-            "name": "Еврокуб",
+            "name": "Подоконник",
             "gpio": {
                 "pump": "none",
                 "valve": "none",

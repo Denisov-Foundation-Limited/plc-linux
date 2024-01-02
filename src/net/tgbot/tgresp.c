@@ -49,6 +49,18 @@ bool TgPhotoRespSend(const char *token, unsigned id, const char *photo, const ch
     return WebClientPhotoRequest(url, id, photo, caption, buf);
 }
 
+bool TgDocumentRespSend(const char *token, unsigned id, const char *doc)
+{
+    char    url[STR_LEN];
+    char    buf[BUFFER_LEN_MAX];
+
+    snprintf(url, STR_LEN, "https://api.telegram.org/bot%s/sendDocument?chat_id=%d", token, id);
+
+    memset(buf, 0x0, BUFFER_LEN_MAX);
+
+    return WebClientDocumentRequest(url, id, doc, buf);
+}
+
 void TgRespButtonAdd(json_t *buttons, const char *name)
 {
     json_t *butline = json_array();

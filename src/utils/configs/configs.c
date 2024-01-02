@@ -35,6 +35,7 @@
 #include <plc/plc.h>
 #include <plc/menu.h>
 #include <controllers/meteo.h>
+#include <controllers/socket.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -448,7 +449,13 @@ static bool PlcRead(const char *path)
                 ctrl = MENU_CTRL_TIME;
             } else if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "tank")) {
                 ctrl = MENU_CTRL_TANK;
-            } else {
+            } else if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "socket")) {
+                ctrl = MENU_CTRL_SOCKET;
+            } else if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "light")) {
+                ctrl = MENU_CTRL_LIGHT;
+            } else if (!strcmp(json_string_value(json_object_get(ext_value, "ctrl")), "security")) {
+                ctrl = MENU_CTRL_SECURITY;
+            }else {
                 LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown ctrl type");
                 return false;
             }
@@ -477,8 +484,10 @@ static bool PlcRead(const char *path)
 
                 value->meteo.sensor = sensor;
             } else if (ctrl == MENU_CTRL_TANK) {
+                json_t *jtank = json_object_get(ext_value, "tank");
+
                 Tank *tank = TankGet(
-                    json_string_value(json_object_get(ext_value, "tank"))
+                    json_string_value(json_object_get(jtank, "name"))
                 );
 
                 if (tank == NULL) {
@@ -487,6 +496,36 @@ static bool PlcRead(const char *path)
                 }
 
                 value->tank.tank = tank;
+
+                if (!strcmp(json_string_value(json_object_get(jtank, "param")), "pump")) {
+                    value->tank.param = MENU_TANK_PUMP;
+                } else if (!strcmp(json_string_value(json_object_get(jtank, "param")), "valve")) {
+                    value->tank.param = MENU_TANK_VALVE;
+                } else if (!strcmp(json_string_value(json_object_get(jtank, "param")), "level")) {
+                    value->tank.param = MENU_TANK_LEVEL;
+                }
+            } else if (ctrl == MENU_CTRL_SOCKET) {
+                Socket *socket = SocketGet(
+                    json_string_value(json_object_get(ext_value, "socket"))
+                );
+
+                if (socket == NULL) {
+                    LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown menu socket");
+                    return false;
+                }
+
+                value->socket.sock = socket;
+            } else if (ctrl == MENU_CTRL_LIGHT) {
+                Socket *socket = SocketGet(
+                    json_string_value(json_object_get(ext_value, "light"))
+                );
+
+                if (socket == NULL) {
+                    LogF(LOG_TYPE_ERROR, "CONFIGS", "Unknown menu light");
+                    return false;
+                }
+
+                value->light.sock = socket;
             }
 
             MenuValueAdd(level, value);

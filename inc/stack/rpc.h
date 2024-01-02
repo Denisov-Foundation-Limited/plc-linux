@@ -55,6 +55,8 @@ bool RpcSecuritySensorsGet(unsigned unit, GList **sensors);
 /*                                                                   */
 /*********************************************************************/
 
+#define RPC_METEO_BAD_VAL   -127
+
 typedef enum {
     RPC_METEO_SENSOR_DS18B20
 } RpcMeteoSensorType;

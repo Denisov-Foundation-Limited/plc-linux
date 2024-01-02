@@ -39,11 +39,11 @@ void TgCamProcess(const char *token, unsigned from, const char *message)
             if (!strcmp(message, cam->name)) {
                 if (RpcCameraPathGet(RPC_DEFAULT_UNIT, cam_path)) {
 
-                    snprintf(file_name, SHORT_STR_LEN, "%u.jpg", from);
-                    snprintf(file_full_name, SHORT_STR_LEN, "%s%u.jpg", cam_path, from);
+                    snprintf(file_name, SHORT_STR_LEN, "%s.jpg", cam->name);
+                    snprintf(file_full_name, SHORT_STR_LEN, "%s%s.jpg", cam_path, cam->name);
 
                     if (RpcCameraPhotoSave(RPC_DEFAULT_UNIT, cam->name, file_name)) {
-                        if (!TgPhotoRespSend(token, from, file_full_name, cam->name)) {
+                        if (!TgDocumentRespSend(token, from, file_full_name)) {
                             text = g_string_append(text, "<b>Ошибка отправки фото</b>");
                             LogF(LOG_TYPE_ERROR, "TGCAM", "Failed to send cam photo for user %d", from);
                         }

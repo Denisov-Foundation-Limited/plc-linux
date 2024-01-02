@@ -62,6 +62,7 @@ static int SensorsThread(void *data)
             if (!ret) {
                 if (!sensor->error) {
                     sensor->error = true;
+                    sensor->ds18b20.temp = METEO_BAD_VAL;
                     LogF(LOG_TYPE_ERROR, "METEO", "Failed to read temp sensor \"%s\"", sensor->name);
                 }
             } else {

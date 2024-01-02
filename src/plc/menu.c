@@ -53,7 +53,9 @@ static void MenuDataPrint(MenuValue *value)
             temp = (int)value->meteo.sensor->ds18b20.temp;
         }
 
-        if (temp > 0) {
+        if (temp == METEO_BAD_VAL) {
+            snprintf(val, SHORT_STR_LEN, "%s:err", value->alias);
+        } else if (temp > 0) {
             if (temp < 10) {
                 snprintf(val, SHORT_STR_LEN, "%s: +%d", value->alias, temp);
             } else {
@@ -89,14 +91,28 @@ static void MenuDataPrint(MenuValue *value)
             snprintf(val, SHORT_STR_LEN, "ERR");
         }
     } else if (value->ctrl == MENU_CTRL_TANK) {
-        unsigned lvl = value->tank.tank->level;
-        if (lvl < 10) {
-            snprintf(val, SHORT_STR_LEN, "%s:  %u%%", value->alias, lvl);
-        } else if (lvl >= 10 && lvl < 100) {
-            snprintf(val, SHORT_STR_LEN, "%s: %u%%", value->alias, lvl);
-        } else {
-            snprintf(val, SHORT_STR_LEN, "%s:%u%%", value->alias, lvl);
+        if (value->tank.param == MENU_TANK_LEVEL) {
+            unsigned lvl = value->tank.tank->level;
+            if (lvl < 10) {
+                snprintf(val, SHORT_STR_LEN, "%s:  %u%%", value->alias, lvl);
+            } else if (lvl >= 10 && lvl < 100) {
+                snprintf(val, SHORT_STR_LEN, "%s: %u%%", value->alias, lvl);
+            } else {
+                snprintf(val, SHORT_STR_LEN, "%s:%u%%", value->alias, lvl);
+            }
+        } else if (value->tank.param == MENU_TANK_PUMP) {
+            bool status = value->tank.tank->pump;
+            snprintf(val, SHORT_STR_LEN, "%s:%s", value->alias, (status == true) ? "O" : "X");
+        } else if (value->tank.param == MENU_TANK_VALVE) {
+            bool status = value->tank.tank->valve;
+            snprintf(val, SHORT_STR_LEN, "%s:%s", value->alias, (status == true) ? "O" : "X");
         }
+    } else if (value->ctrl == MENU_CTRL_SOCKET) {
+        bool status = value->socket.sock->status;
+        snprintf(val, SHORT_STR_LEN, "%s:%s", value->alias, (status == true) ? "O" : "X");
+    } else if (value->ctrl == MENU_CTRL_LIGHT) {
+        bool status = value->light.sock->status;
+        snprintf(val, SHORT_STR_LEN, "%s:%s", value->alias, (status == true) ? "O" : "X");
     }
 
     LcdPrint(Menu.lcd, val);
@@ -110,12 +126,18 @@ static int DisplayThread(void *data)
     for (;;) {
         if (counter == 50 || Menu.pressed) {
             Menu.pressed = false;
+            counter = 0;
             cur_lvl = 0;
 
             for (GList *l = Menu.levels; l != NULL; l = l->next) {
                 MenuLevel *level = (MenuLevel *)l->data;
                 if (cur_lvl == Menu.level) {
                     LcdClear(Menu.lcd);
+
+                    if (strcmp(level->name, "main")) {
+                        LcdPosSet(Menu.lcd, 0, 0);
+                        LcdPrint(Menu.lcd, level->name);
+                    }
 
                     for (GList *v = level->values; v != NULL; v = v->next) {
                         MenuValue *value = (MenuValue *)v->data;
@@ -126,6 +148,7 @@ static int DisplayThread(void *data)
                 cur_lvl++;
             }
         }
+        counter++;
         UtilsMsecSleep(100);
     }
     return 0;
@@ -135,20 +158,25 @@ static int ButtonsThread(void *data)
 {
     for (;;) {
         if (!GpioPinRead(Menu.gpio[MENU_GPIO_UP])) {
-            if (Menu.level < g_list_length(Menu.levels)) {
+            if (Menu.level < (g_list_length(Menu.levels) - 1)) {
                 Menu.level++;
+            } else {
+                Menu.level = 0;
             }
             Menu.pressed = true;
             UtilsMsecSleep(800);
-        } else {
-            if (!GpioPinRead(Menu.gpio[MENU_GPIO_DOWN])) {
-                if (Menu.level > 0) {
-                    Menu.level--;
-                }
-                Menu.pressed = true;
-                UtilsMsecSleep(800);
-            }
         }
+
+        if (!GpioPinRead(Menu.gpio[MENU_GPIO_DOWN])) {
+            if (Menu.level > 0) {
+                Menu.level--;
+            } else {
+                Menu.level = g_list_length(Menu.levels) - 1;
+            }
+            Menu.pressed = true;
+            UtilsMsecSleep(800);
+        }
+
         UtilsMsecSleep(200);
     }
     return 0;
