@@ -116,6 +116,8 @@ static void TankLevelProcess(Tank *tank)
 
 static int TankLevelsThread(void *data)
 {
+    bool state;
+
      for (;;) {
         for (GList *t = Tanks.tanks; t != NULL; t = t->next) {
             Tank *tank = (Tank *)t->data;
@@ -124,7 +126,10 @@ static int TankLevelsThread(void *data)
             for (GList *l = tank->levels; l != NULL; l = l->next) {
                 TankLevel *level = (TankLevel *)l->data;
 
-                bool state = GpioPinRead(level->gpio);
+                if (!GpioPinRead(level->gpio, &state)) {
+                    LogF(LOG_TYPE_ERROR, "TANK", "Failed to read GPIO \"%s\"", level->gpio->name);
+                    continue;
+                }
 
                 if (state) {
                     if (level->percent > level_num) {
@@ -147,16 +152,22 @@ static int TankLevelsThread(void *data)
 
 static int TankStatusThread(void *data)
 {
+    bool state;
+
      for (;;) {
         bool pressed = false;
 
         for (GList *t = Tanks.tanks; t != NULL; t = t->next) {
             Tank *tank = (Tank *)t->data;
 
-            if (GpioPinRead(tank->gpio[TANK_GPIO_STATUS_BUTTON])) {
-                pressed = true;
-                if (!TankStatusSet(tank, !TankStatusGet(tank), true)) {
-                    LogF(LOG_TYPE_ERROR, "TANK", "Failed to switch tank \"%s\" status", tank->name);
+            if (!GpioPinRead(tank->gpio[TANK_GPIO_STATUS_BUTTON], &state)) {
+                LogF(LOG_TYPE_ERROR, "TANK", "Failed to read GPIO \"%s\"", tank->gpio[TANK_GPIO_STATUS_BUTTON]->name);
+            } else {
+                if (state) {
+                    pressed = true;
+                    if (!TankStatusSet(tank, !TankStatusGet(tank), true)) {
+                        LogF(LOG_TYPE_ERROR, "TANK", "Failed to switch tank \"%s\" status", tank->name);
+                    }
                 }
             }
         }

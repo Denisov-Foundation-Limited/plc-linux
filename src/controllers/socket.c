@@ -76,13 +76,20 @@ static int StatusSaveThread(void *data)
 
 static int SocketThread(void *data)
 {
+    bool state = false;
+
      for (;;) {
         bool pressed = false;
 
         for (GList *s = Sockets.sockets; s != NULL; s = s->next) {
             Socket *socket = (Socket *)s->data;
 
-            if (GpioPinRead(socket->gpio[SOCKET_PIN_BUTTON])) {
+            if (!GpioPinRead(socket->gpio[SOCKET_PIN_BUTTON], &state)) {
+                LogF(LOG_TYPE_ERROR, "SOCKET", "Failed to read GPIO \"%s\"", socket->gpio[SOCKET_PIN_BUTTON]->name);
+                continue;
+            }
+
+            if (state) {
                 pressed = true;
                 SocketStatusSet(socket, !SocketStatusGet(socket), true);
             }

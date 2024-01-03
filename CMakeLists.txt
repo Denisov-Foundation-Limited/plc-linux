@@ -67,5 +67,5 @@ add_executable(${PROJECT_NAME} ${SRC_LIST})
 target_link_libraries(${PROJECT_NAME} -lfcgi -ljansson -lcurl -lm -lglib-2.0 -lsqlite3 -pthread)
 
 IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "arm") 
-target_link_libraries(${PROJECT_NAME} -lwiringPi -lwiringPiDev)
+target_link_libraries(${PROJECT_NAME} -lwiringPiLite)
 ENDIF()

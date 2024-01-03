@@ -156,25 +156,35 @@ static int DisplayThread(void *data)
 
 static int ButtonsThread(void *data)
 {
+    bool state;
+
     for (;;) {
-        if (!GpioPinRead(Menu.gpio[MENU_GPIO_UP])) {
-            if (Menu.level < (g_list_length(Menu.levels) - 1)) {
-                Menu.level++;
-            } else {
-                Menu.level = 0;
+        if (!GpioPinRead(Menu.gpio[MENU_GPIO_UP], &state)) {
+            LogF(LOG_TYPE_ERROR, "MENU", "Failed to read GPIO \"%s\"", Menu.gpio[MENU_GPIO_UP]->name);
+        } else { 
+            if (!state) {
+                if (Menu.level < (g_list_length(Menu.levels) - 1)) {
+                    Menu.level++;
+                } else {
+                    Menu.level = 0;
+                }
+                Menu.pressed = true;
+                UtilsMsecSleep(800);
             }
-            Menu.pressed = true;
-            UtilsMsecSleep(800);
         }
 
-        if (!GpioPinRead(Menu.gpio[MENU_GPIO_DOWN])) {
-            if (Menu.level > 0) {
-                Menu.level--;
-            } else {
-                Menu.level = g_list_length(Menu.levels) - 1;
+        if (!GpioPinRead(Menu.gpio[MENU_GPIO_DOWN], &state)) {
+            LogF(LOG_TYPE_ERROR, "MENU", "Failed to read GPIO \"%s\"", Menu.gpio[MENU_GPIO_UP]->name);
+        } else {
+            if (!state) {
+                if (Menu.level > 0) {
+                    Menu.level--;
+                } else {
+                    Menu.level = g_list_length(Menu.levels) - 1;
+                }
+                Menu.pressed = true;
+                UtilsMsecSleep(800);
             }
-            Menu.pressed = true;
-            UtilsMsecSleep(800);
         }
 
         UtilsMsecSleep(200);

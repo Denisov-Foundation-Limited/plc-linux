@@ -15,8 +15,8 @@
 #include <core/lcd.h>
 
 #ifdef __arm__
-#include <wiringPi.h>
-#include <lcd.h>
+#include <wiringPiLite/wiringPi.h>
+#include <wiringPiLite/lcd.h>
 #endif
 
 /*********************************************************************/

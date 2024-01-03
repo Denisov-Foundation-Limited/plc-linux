@@ -67,12 +67,12 @@ if [[ $? -eq 0 ]] ; then
     reboot
 fi
 
-if [[ ! -e "/usr/lib/libwiringPi.so" ]] ; then
-    git clone https://github.com/orangepi-xunlong/wiringOP.git
-    cd wiringOP
-    chmod +x build && ./build
+if [[ ! -e "/usr/lib/libwiringPiLite.a" ]] ; then
+    git clone https://github.com/LittleBuster/wiringPiLite.git
+    cd wiringPiLite
+    chmod +x build.sh && ./build.sh
     cd -
-    rm -rf wiringOP
+    rm -rf wiringPiLite
 fi
 
 cat /etc/modules | grep -r "w1-therm" > /dev/null

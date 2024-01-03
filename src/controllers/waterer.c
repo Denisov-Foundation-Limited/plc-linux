@@ -100,16 +100,22 @@ static int WatererThread(void *data)
 
 static int ButtonsThread(void *data)
 {
+    bool state;
+
     for (;;) {
         bool pressed = false;
 
         for (GList *w = Watering.waterers; w != NULL; w = w->next) {
             Waterer *wtr = (Waterer *)w->data;
 
-            if (GpioPinRead(wtr->gpio[WATERER_GPIO_STATUS_BUTTON])) {
-                pressed = true;
-                if (!WatererStatusSet(wtr, !wtr->status, true)) {
-                    LogF(LOG_TYPE_ERROR, "WATERER", "Failed to switch Waterer \"%s\" status", wtr->name);
+            if (!GpioPinRead(wtr->gpio[WATERER_GPIO_STATUS_BUTTON], &state)) {
+                LogF(LOG_TYPE_ERROR, "WATERER", "Failed to read GPIO \"%s\"", wtr->gpio[WATERER_GPIO_STATUS_BUTTON]->name);
+            } else {
+                if (state) {
+                    pressed = true;
+                    if (!WatererStatusSet(wtr, !wtr->status, true)) {
+                        LogF(LOG_TYPE_ERROR, "WATERER", "Failed to switch Waterer \"%s\" status", wtr->name);
+                    }
                 }
             }
         }

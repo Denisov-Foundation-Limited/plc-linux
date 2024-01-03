@@ -106,19 +106,21 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
         Extender *ext = ExtenderNew(
             json_string_value(json_object_get(value, "name")),
             type,
+            json_integer_value(json_object_get(value, "bus")),
             json_integer_value(json_object_get(value, "addr")),
-            json_integer_value(json_object_get(value, "base")),
-            json_boolean_value(json_object_get(value, "enabled"))
+            json_integer_value(json_object_get(value, "base"))
         );
 
-        if (!ExtenderAdd(ext, err)) {
-            json_decref(data);
-            LogF(LOG_TYPE_ERROR, "CONFIGS", "Failed to add Extender \"%s\": %s", ext->name, err);
-            return false;
-        }
+        if (json_boolean_value(json_object_get(value, "enabled"))) {
+            if (!ExtenderAdd(ext, err)) {
+                json_decref(data);
+                LogF(LOG_TYPE_ERROR, "CONFIGS", "Failed to add Extender \"%s\": %s", ext->name, err);
+                return false;
+            }
 
-        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Extender name: \"%s\" type: \"%s\" addr: \"%u\" base: \"%u\" enabled: \"%d\"",
-                ext->name, type_str, ext->addr, ext->base, ext->enabled);
+            LogF(LOG_TYPE_INFO, "CONFIGS", "Add Extender name: \"%s\" type: \"%s\" bus: \"%u\" addr: \"%u\" base: \"%u\"",
+                    ext->name, type_str, ext->bus, ext->addr, ext->base);
+        }
     }
 
     /**

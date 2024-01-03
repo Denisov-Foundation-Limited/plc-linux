@@ -91,19 +91,21 @@ GList **GpioPinsGet();
  * @brief Read digital state from GPIO
  * 
  * @param pin GPIO pin
+ * @param state Readed state
  * 
- * @return Readed value
+ * @return True/False as result of reading
  */
-bool GpioPinRead(const GpioPin *pin);
+bool GpioPinRead(const GpioPin *pin, bool *state);
 
 /**
  * @brief Read analog value from GPIO
  * 
  * @param pin GPIO pin
+ * @param value Analog value
  * 
- * @return Readed value
+ * @return True/False as result of reading
  */
-int GpioPinReadA(const GpioPin *pin);
+int GpioPinReadA(const GpioPin *pin, int *value);
 
 /**
  * @brief Writing digital value to GPIO

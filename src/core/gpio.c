@@ -11,7 +11,7 @@
 #include <core/gpio.h>
 
 #ifdef __arm__
-#include <wiringPi.h>
+#include <wiringPiLite/wiringPi.h>
 #endif
 
 /*********************************************************************/
@@ -103,26 +103,39 @@ GList **GpioPinsGet()
     return &pins;
 }
 
-bool GpioPinRead(const GpioPin *pin)
+bool GpioPinRead(const GpioPin *pin, bool *state)
 {
+    int     val;
+    bool    ret;
+
     if (pin->pin == 0) {
-        return 0;
+        return true;
     }
+
 #ifdef __arm__
-    return (bool)digitalRead(pin->pin);
+    ret = digitalRead(pin->pin, &val);
+
+    *state = (val == HIGH) ? true : false;
+
+    return ret;
 #endif
+
+    *state = true;
     return true;
 }
 
-int GpioPinReadA(const GpioPin *pin)
+int GpioPinReadA(const GpioPin *pin, int *value)
 {
     if (pin->pin == 0) {
-        return 0;
+        return true;
     }
+
 #ifdef __arm__
-    return analogRead(pin->pin);
+    return analogRead(pin->pin, value);
 #endif
-    return 0;
+    *value = 0;
+
+    return true;
 }
 
 void GpioPinWrite(const GpioPin *pin, bool state)

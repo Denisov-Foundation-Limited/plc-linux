@@ -13,10 +13,10 @@
 #include <core/extenders.h>
 
 #ifdef __arm__
-#include <wiringPi.h>
-#include <pcf8574.h>
-#include <mcp23017.h>
-#include <ads1115.h>
+#include <wiringPiLite/wiringPi.h>
+#include <wiringPiLite/pcf8574.h>
+#include <wiringPiLite/mcp23017.h>
+#include <wiringPiLite/ads1115.h>
 #endif
 
 /*********************************************************************/
@@ -33,7 +33,7 @@ static GList *exts = NULL;
 /*                                                                   */
 /*********************************************************************/
 
-Extender *ExtenderNew(const char *name, ExtenderType type, unsigned addr, unsigned base, bool enabled)
+Extender *ExtenderNew(const char *name, ExtenderType type, unsigned bus, unsigned addr, unsigned base)
 {
     Extender *ext = (Extender *)malloc(sizeof(Extender));
 
@@ -41,7 +41,7 @@ Extender *ExtenderNew(const char *name, ExtenderType type, unsigned addr, unsign
     ext->type = type;
     ext->addr = addr;
     ext->base = base;
-    ext->enabled = enabled;
+    ext->bus = bus;
 
     return ext;    
 }
@@ -51,19 +51,19 @@ bool ExtenderAdd(const Extender *ext, char *err)
 #ifdef __arm__
     switch (ext->type) {
         case EXT_TYPE_PCF_8574:
-            if (pcf8574Setup(ext->base, ext->addr) < 0) {
+            if (!pcf8574Setup(ext->bus, ext->addr, ext->base)) {
                 return false;
             }
             break;
 
         case EXT_TYPE_MCP_23017:
-            if (mcp23017Setup(ext->base, ext->addr) < 0) {
+            if (!mcp23017Setup(ext->bus, ext->addr, ext->base)) {
                 return false;
             }
             break;
 
         case EXT_TYPE_ADS_1115:
-            if (ads1115Setup(ext->base, ext->addr) < 0) {
+            if (!ads1115Setup(ext->bus, ext->addr, ext->base)) {
                 return false;
             }
             break;

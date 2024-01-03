@@ -81,6 +81,7 @@ static int SensorsThread(void *data)
 {
     char        msg[STR_LEN];
     unsigned    timer = 0;
+    bool        state = false;
 
     for (;;) {
         timer++;
@@ -98,20 +99,35 @@ static int SensorsThread(void *data)
 
             switch (sensor->type) {
                 case SECURITY_SENSOR_MICRO_WAVE:
-                    if (!GpioPinRead(sensor->gpio)) {
+                    if (!GpioPinRead(sensor->gpio, &state)) {
+                        LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to read GPIO \"%s\"", sensor->gpio->name);
+                        break;
+                    }
+
+                    if (!state) {
                         sensor->counter++;
                     }
                     break;
 
                 case SECURITY_SENSOR_PIR:
-                    if (GpioPinRead(sensor->gpio)) {
+                    if (!GpioPinRead(sensor->gpio, &state)) {
+                        LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to read GPIO \"%s\"", sensor->gpio->name);
+                        break;
+                    }
+
+                    if (state) {
                         sensor->counter++;
                     }
                     break;
 
                 case SECURITY_SENSOR_REED:
-                    if (!GpioPinRead(sensor->gpio)) {
-                        sensor->detected = true;
+                    if (!GpioPinRead(sensor->gpio, &state)) {
+                        LogF(LOG_TYPE_ERROR, "SECURITY", "Failed to read GPIO \"%s\"", sensor->gpio->name);
+                        break;
+                    }
+
+                    if (!state) {
+                         sensor->detected = true;
                     }
                     break;
             }

@@ -35,6 +35,7 @@ static int TestThread(void *data)
     bool    last_state = false;
     bool    dev_found = false;
     GList   *devices = NULL;
+    bool    state = false;
 
    LogPrint(LOG_TYPE_INFO, "FTEST", "Starting FTest");
 
@@ -63,7 +64,12 @@ static int TestThread(void *data)
 
             switch (pin->type) {
                 case GPIO_TYPE_DIGITAL:
-                    if (GpioPinRead(pin)) {
+                    if (!GpioPinRead(pin, &state)) {
+                        LogPrintF(LOG_TYPE_ERROR, "FTEST", "Failed to read GPIO \"%s\"", pin->name);
+                        continue;
+                    }
+
+                    if (state) {
                         strncpy(gpio_value, "HIGH", SHORT_STR_LEN);
                     } else {
                         strncpy(gpio_value, "LOW", SHORT_STR_LEN);
@@ -72,7 +78,10 @@ static int TestThread(void *data)
                     break;
 
                 case GPIO_TYPE_ANALOG:
-                    val = GpioPinReadA(pin);
+                    if (!GpioPinReadA(pin, &val)) {
+                        LogPrintF(LOG_TYPE_ERROR, "FTEST", "Failed to read GPIO \"%s\"", pin->name);
+                        continue;
+                    }
                     snprintf(gpio_value, SHORT_STR_LEN, "%d", val);
                     strncpy(gpio_type, "ANALOG", SHORT_STR_LEN);
                     break;
