@@ -111,16 +111,14 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
             json_integer_value(json_object_get(value, "base"))
         );
 
-        if (json_boolean_value(json_object_get(value, "enabled"))) {
-            if (!ExtenderAdd(ext, err)) {
-                json_decref(data);
-                LogF(LOG_TYPE_ERROR, "CONFIGS", "Failed to add Extender \"%s\": %s", ext->name, err);
-                return false;
-            }
-
-            LogF(LOG_TYPE_INFO, "CONFIGS", "Add Extender name: \"%s\" type: \"%s\" bus: \"%u\" addr: \"%u\" base: \"%u\"",
-                    ext->name, type_str, ext->bus, ext->addr, ext->base);
+        if (!ExtenderAdd(ext, err)) {
+            json_decref(data);
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Failed to add Extender \"%s\": %s", ext->name, err);
+            return false;
         }
+
+        LogF(LOG_TYPE_INFO, "CONFIGS", "Add Extender name: \"%s\" type: \"%s\" bus: \"%u\" addr: \"%u\" base: \"%u\"",
+                ext->name, type_str, ext->bus, ext->addr, ext->base);
     }
 
     /**

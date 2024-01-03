@@ -1,13 +1,7 @@
 {
     "extenders": [
-        { "name": "lcd",    "type": "pcf8574",  "bus": 1, "addr": 63, "base": 800, "enabled": true  },
-        { "name": "gpio",   "type": "mcp23017", "bus": 1, "addr": 38, "base": 700, "enabled": true  },
-        { "name": "unit-6", "type": "mcp23017", "bus": 1, "addr": 37, "base": 600, "enabled": false },
-        { "name": "unit-5", "type": "mcp23017", "bus": 1, "addr": 36, "base": 500, "enabled": false },
-        { "name": "unit-4", "type": "mcp23017", "bus": 1, "addr": 35, "base": 400, "enabled": false },
-        { "name": "unit-3", "type": "mcp23017", "bus": 1, "addr": 34, "base": 300, "enabled": false },
-        { "name": "unit-2", "type": "mcp23017", "bus": 1, "addr": 33, "base": 200, "enabled": false },
-        { "name": "unit-1", "type": "mcp23017", "bus": 1, "addr": 32, "base": 100, "enabled": false }
+        { "name": "lcd",    "type": "pcf8574",  "bus": 1, "addr": 63, "base": 800 },
+        { "name": "gpio",   "type": "mcp23017", "bus": 1, "addr": 38, "base": 700 }
     ],
 
     "gpio": [

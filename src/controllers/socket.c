@@ -84,14 +84,13 @@ static int SocketThread(void *data)
         for (GList *s = Sockets.sockets; s != NULL; s = s->next) {
             Socket *socket = (Socket *)s->data;
 
-            if (!GpioPinRead(socket->gpio[SOCKET_PIN_BUTTON], &state)) {
+            if (GpioPinRead(socket->gpio[SOCKET_PIN_BUTTON], &state)) {
+                if (state) {
+                    pressed = true;
+                    SocketStatusSet(socket, !SocketStatusGet(socket), true);
+                }
+            } else {
                 LogF(LOG_TYPE_ERROR, "SOCKET", "Failed to read GPIO \"%s\"", socket->gpio[SOCKET_PIN_BUTTON]->name);
-                continue;
-            }
-
-            if (state) {
-                pressed = true;
-                SocketStatusSet(socket, !SocketStatusGet(socket), true);
             }
         }
 

@@ -1,0 +1,48 @@
+{
+    "extenders": [
+        { "name": "lcd",    "type": "pcf8574",  "bus": 1, "addr": 63, "base": 800 },
+        { "name": "gpio",   "type": "mcp23017", "bus": 1, "addr": 38, "base": 700 },
+        { "name": "gpio-2", "type": "mcp23017", "bus": 1, "addr": 37, "base": 600 },
+        { "name": "rear",   "type": "pcf8574",  "bus": 1, "addr": 34, "base": 500 }
+    ],
+
+    "gpio": [
+        { "name": "cpu-sts",      "pin": 14,  "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-opto-1",   "pin": 707, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-2",   "pin": 706, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-3",   "pin": 705, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-4",   "pin": 704, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-5",   "pin": 703, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-6",   "pin": 702, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-7",   "pin": 701, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-8",   "pin": 700, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-9",   "pin": 611, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-10",  "pin": 610, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-11",  "pin": 609, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-12",  "pin": 608, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-rly10-1",  "pin": 708, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-2",  "pin": 709, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-3",  "pin": 710, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-4",  "pin": 715, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-5",  "pin": 712, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-6",  "pin": 714, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-7",  "pin": 607, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-8",  "pin": 606, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-9",  "pin": 605, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-10", "pin": 604, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-11", "pin": 603, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-12", "pin": 602, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-buzzer",   "pin": 713, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-pwr-12",   "pin": 711, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-status",   "pin": 504, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-alarm",    "pin": 503, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-btn-down", "pin": 502, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-btn-ok",   "pin": 501, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-btn-up",   "pin": 500, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "none",         "pin": 0,   "type": "digital", "mode": "output", "pull": "none" }
+    ],
+
+    "lcd": [
+        { "name": "main", "rs": 800, "rw": 801, "e":  802, "k":  803, "d4": 804, "d5": 805, "d6": 806, "d7": 807 }
+    ]
+}
