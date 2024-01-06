@@ -255,8 +255,12 @@ bool StackStart()
 
     Log(LOG_TYPE_INFO, "STACK", "Starting Stack monitoring");
 
-    thrd_create(&stk_th, &StackThread, NULL);
-    thrd_detach(stk_th);
+    if (thrd_create(&stk_th, &StackThread, NULL) != thrd_success) {
+        return false;
+    }
+    if (thrd_detach(stk_th) != thrd_success) {
+        return false;
+    }
 
     return true;
 }

@@ -310,10 +310,18 @@ bool TankControllerStart()
 
     Log(LOG_TYPE_INFO, "TANK", "Starting Tank controller");
 
-    thrd_create(&lvl_th, &TankLevelsThread, NULL);
-    thrd_detach(lvl_th);
-    thrd_create(&sts_th, &TankStatusThread, NULL);
-    thrd_detach(sts_th);
+    if (thrd_create(&lvl_th, &TankLevelsThread, NULL) != thrd_success) {
+        return false;
+    }
+    if (thrd_detach(lvl_th) != thrd_success) {
+        return false;
+    }
+    if (thrd_create(&sts_th, &TankStatusThread, NULL) != thrd_success) {
+        return false;
+    }
+    if (thrd_detach(sts_th) != thrd_success) {
+        return false;
+    }
 
     return true;
 }

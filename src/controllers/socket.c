@@ -126,8 +126,12 @@ bool SocketControllerStart()
 
     Log(LOG_TYPE_INFO, "SOCKET", "Starting Socket controller");
 
-    thrd_create(&sock_th, &SocketThread, NULL);
-    thrd_detach(sock_th);
+    if (thrd_create(&sock_th, &SocketThread, NULL) != thrd_success) {
+        return false;
+    }
+    if (thrd_detach(sock_th) != thrd_success) {
+        return false;
+    }
 
     return true;
 }
@@ -168,8 +172,14 @@ bool SocketStatusSet(Socket *sock, bool status, bool save)
     }
 
     if (save) {
-        thrd_create(&save_th, &StatusSaveThread, (void *)sock);
-        thrd_detach(save_th);
+        if (thrd_create(&save_th, &StatusSaveThread, (void *)sock) != thrd_success) {
+            LogF(LOG_TYPE_INFO, "SOCKET", "Failed to create StatusSave thread for socket \"%s\"", sock->name);
+            return false;
+        }
+        if (thrd_detach(save_th) != thrd_success) {
+            LogF(LOG_TYPE_INFO, "SOCKET", "Failed to detach StatusSave thread for socket \"%s\"", sock->name);
+            return false;
+        }
     }
 
     return true;

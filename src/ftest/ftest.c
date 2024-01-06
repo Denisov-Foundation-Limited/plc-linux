@@ -179,8 +179,12 @@ bool FactoryTestStart()
     thrd_t  test_th;
     int     test_res;
 
-    thrd_create(&test_th, &TestThread, NULL);
-    thrd_join(test_th, &test_res);
+    if (thrd_create(&test_th, &TestThread, NULL) != thrd_success) {
+        return false;
+    }
+    if (thrd_join(test_th, &test_res) != thrd_success) {
+        return false;
+    }
 
     if (test_res < 0) {
         return false;

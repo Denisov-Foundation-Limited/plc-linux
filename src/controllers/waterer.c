@@ -237,7 +237,7 @@ bool WatererControllerStart()
 
     Log(LOG_TYPE_INFO, "WATERER", "Starting Waterer controller");
 
-    if (thrd_create(&wtr_th, &WatererThread, NULL)  != thrd_success) {
+    if (thrd_create(&wtr_th, &WatererThread, NULL) != thrd_success) {
         return false;
     }
 
@@ -245,7 +245,7 @@ bool WatererControllerStart()
         return false;
     }
 
-    if (thrd_create(&bth_th, &ButtonsThread, NULL)  != thrd_success) {
+    if (thrd_create(&bth_th, &ButtonsThread, NULL) != thrd_success) {
         return false;
     }
 

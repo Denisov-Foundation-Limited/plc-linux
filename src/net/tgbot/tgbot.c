@@ -312,8 +312,12 @@ bool TgBotStart()
         return true;
     }
 
-    thrd_create(&th, &TelegramThread, NULL);
-    thrd_detach(th);
+    if (thrd_create(&th, &TelegramThread, NULL) != thrd_success) {
+        return false;
+    }
+    if (thrd_detach(th) != thrd_success) {
+        return false;
+    }
 
     return true;
 }

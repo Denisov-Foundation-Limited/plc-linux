@@ -305,10 +305,18 @@ bool SecurityControllerStart()
 
     Log(LOG_TYPE_INFO, "SECURITY", "Starting Security controller");
 
-    thrd_create(&sens_th, &SensorsThread, NULL);
-    thrd_detach(sens_th);
-    thrd_create(&keys_th, &KeysThread, NULL);
-    thrd_detach(keys_th);
+    if (thrd_create(&sens_th, &SensorsThread, NULL) != thrd_success) {
+        return false;
+    }
+    if (thrd_detach(sens_th != thrd_success)) {
+        return false;
+    }
+    if (thrd_create(&keys_th, &KeysThread, NULL) != thrd_success) {
+        return false;
+    }
+    if (thrd_detach(keys_th)) {
+        return false;
+    }
 
     return true;
 }
