@@ -13,6 +13,19 @@
                         "low": false
                     }
                 }
+            },
+            {
+                "name": "Кабинет",
+                "type": "ds18b20",
+                "id": "",
+                "notify": {
+                    "enabled": false,
+                    "threshold": {
+                        "temp": 0,
+                        "high": true,
+                        "low": false
+                    }
+                }
             }
         ]
     },

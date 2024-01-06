@@ -46,7 +46,7 @@ static struct _Plc {
 
 static int AlarmThread(void *data)
 {
-    bool    last = true, last_bzr = true;
+    bool    last = true;
 
     for (;;) {
         if (Plc.alarms != 0x0) {
@@ -61,10 +61,8 @@ static int AlarmThread(void *data)
 
         if (Plc.buzzer) {
             if (last) {
-                last_bzr = false;
                 GpioPinWrite(Plc.gpio[PLC_GPIO_BUZZER], true);
             } else {
-                last_bzr = true;
                 GpioPinWrite(Plc.gpio[PLC_GPIO_BUZZER], false);
             }
         }

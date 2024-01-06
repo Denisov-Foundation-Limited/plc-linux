@@ -63,12 +63,6 @@
                 ]
             },
             {
-                "name": "     Meteo     ",
-                "values": [
-                    { "row": 1, "col": 0,  "alias": "WTR", "ctrl": "meteo", "meteo": "Бак" }
-                ]
-            },
-            {
                 "name": "     Socket     ",
                 "values": [
                     { "row": 1, "col": 0,  "alias": "S1", "ctrl": "socket", "socket": "Свитч 1" },

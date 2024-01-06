@@ -109,6 +109,7 @@ bool GpioPinRead(const GpioPin *pin, bool *state)
     bool    ret;
 
     if (pin->pin == 0) {
+        *state = false;
         return true;
     }
 
@@ -127,6 +128,7 @@ bool GpioPinRead(const GpioPin *pin, bool *state)
 int GpioPinReadA(const GpioPin *pin, int *value)
 {
     if (pin->pin == 0) {
+        *value = 0;
         return true;
     }
 
