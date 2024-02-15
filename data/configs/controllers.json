@@ -31,16 +31,16 @@
     },
 
     "socket": [
-        { "name": "Лампа",   "group": "light",  "gpio": { "button": "ext-opto-1", "relay": "ext-rly10-4" } },
-        { "name": "Свитч 1", "group": "socket", "gpio": { "button": "none",       "relay": "ext-rly16-1" } },
-        { "name": "Свитч 2", "group": "socket", "gpio": { "button": "none",       "relay": "ext-rly16-2" } },
-        { "name": "Свитч 3", "group": "socket", "gpio": { "button": "none",       "relay": "ext-rly10-1" } },
-        { "name": "Свитч 4", "group": "socket", "gpio": { "button": "none",       "relay": "ext-rly10-2" } }
+        { "name": "Лампа",   "group": "light",  "gpio": { "button": "none", "relay": "none" } },
+        { "name": "Свитч 1", "group": "socket", "gpio": { "button": "none", "relay": "none" } },
+        { "name": "Свитч 2", "group": "socket", "gpio": { "button": "none", "relay": "none" } },
+        { "name": "Свитч 3", "group": "socket", "gpio": { "button": "none", "relay": "none" } },
+        { "name": "Свитч 4", "group": "socket", "gpio": { "button": "none", "relay": "none" } }
     ],
 
     "security": {
         "gpio": {
-            "status": "cpu-led-sts1",
+            "status": "none",
             "relay": "none"
         },
 
@@ -51,8 +51,8 @@
         },
 
         "sensors": [
-            { "name": "Стул", "type": "microwave", "gpio": "ext-opto-5", "telegram": true, "sms": false, "alarm": false },
-            { "name": "Ящик", "type": "reed",      "gpio": "ext-opto-3", "telegram": true, "sms": true,  "alarm": true  }
+            { "name": "Стул", "type": "microwave", "gpio": "none", "telegram": true, "sms": false, "alarm": false },
+            { "name": "Ящик", "type": "reed",      "gpio": "none", "telegram": true, "sms": true,  "alarm": true  }
         ],
 
         "keys": [
@@ -71,10 +71,10 @@
                 }
             },
             "levels": [
-                { "percent": 0,   "gpio": "none",       "notify": true  },
-                { "percent": 30,  "gpio": "ext-opto-8", "notify": false },
-                { "percent": 70,  "gpio": "ext-opto-7", "notify": false },
-                { "percent": 100, "gpio": "ext-opto-6", "notify": false }
+                { "percent": 0,   "gpio": "none", "notify": true  },
+                { "percent": 30,  "gpio": "none", "notify": false },
+                { "percent": 70,  "gpio": "none", "notify": false },
+                { "percent": 100, "gpio": "none", "notify": false }
             ]
         }
     ],

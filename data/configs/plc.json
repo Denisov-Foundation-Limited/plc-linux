@@ -1,8 +1,8 @@
 {
     "global": {
         "gpio": {
-            "alarm": "cpu-led-alrm",
-            "buzzer": "ext-buzzer"
+            "alarm": "none",
+            "buzzer": "none"
         }
     },
 
@@ -39,57 +39,13 @@
     ],
 
     "menu": {
-        "lcd": "main",
+        "lcd": "none",
         "gpio": {
-            "up": "cpu-btn-up",
-            "middle": "cpu-btn-red",
-            "down": "cpu-btn-dn"
+            "up": "none",
+            "middle": "none",
+            "down": "none"
         },
         "levels": [
-            {
-                "name": "main",
-                "values": [
-                    { "row": 0, "col": 0,  "alias": "STR", "ctrl": "meteo", "meteo": "Улица"   },
-                    { "row": 0, "col": 11, "alias": "",    "ctrl": "time",  "time": "now"      },
-                    { "row": 1, "col": 0,  "alias": "CAB", "ctrl": "meteo", "meteo": "Кабинет" },
-                    { "row": 1, "col": 8,  "alias": "LVL", "ctrl": "tank",  "tank":  { "name": "Подоконник", "param": "level" } }
-                ]
-            },
-            {
-                "name": "     Meteo     ",
-                "values": [
-                    { "row": 1, "col": 0,  "alias": "STR", "ctrl": "meteo", "meteo": "Улица"   },
-                    { "row": 1, "col": 9, "alias": "CAB", "ctrl": "meteo",  "meteo": "Кабинет" }
-                ]
-            },
-            {
-                "name": "     Socket     ",
-                "values": [
-                    { "row": 1, "col": 0,  "alias": "S1", "ctrl": "socket", "socket": "Свитч 1" },
-                    { "row": 1, "col": 6,  "alias": "S2", "ctrl": "socket", "socket": "Свитч 2" },
-                    { "row": 1, "col": 12,  "alias": "S3", "ctrl": "socket", "socket": "Свитч 3" }
-                ]
-            },
-            {
-                "name": "     Socket     ",
-                "values": [
-                    { "row": 1, "col": 0,  "alias": "S1", "ctrl": "socket", "socket": "Свитч 4" }
-                ]
-            },
-            {
-                "name": "     Light     ",
-                "values": [
-                    { "row": 1, "col": 0,  "alias": "LAMP", "ctrl": "light", "light": "Лампа" }
-                ]
-            },
-            {
-                "name": "  Tank: Window  ",
-                "values": [
-                    { "row": 1, "col": 0,  "alias": "P", "ctrl": "tank", "tank": { "name": "Подоконник", "param": "pump" } },
-                    { "row": 1, "col": 4,  "alias": "V", "ctrl": "tank", "tank": { "name": "Подоконник", "param": "valve" } },
-                    { "row": 1, "col": 8,  "alias": "LVL", "ctrl": "tank", "tank": { "name": "Подоконник", "param": "level" } }
-                ]
-            }
         ]
     }
 }

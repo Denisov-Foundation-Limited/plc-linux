@@ -398,14 +398,16 @@ static bool PlcRead(const char *path)
     json_t *jmenu = json_object_get(data, "menu");
     LogF(LOG_TYPE_INFO, "CONFIGS", "Add Menu LCD \"%s\"", json_string_value(json_object_get(jmenu, "lcd")));
 
-    LCD *lcd = LcdGet(json_string_value(json_object_get(jmenu, "lcd")));
-    if (lcd == NULL) {
-        LogF(LOG_TYPE_ERROR, "CONFIGS", "LCD of menu not found \"%s\"",
-            json_string_value(json_object_get(jmenu, "lcd"))
-        );
-        return false;
+    if (strcmp(json_string_value(json_object_get(jmenu, "lcd")), "none")) {
+    	LCD *lcd = LcdGet(json_string_value(json_object_get(jmenu, "lcd")));
+    	if (lcd == NULL) {
+        	LogF(LOG_TYPE_ERROR, "CONFIGS", "LCD of menu not found \"%s\"",
+            	json_string_value(json_object_get(jmenu, "lcd"))
+        	);
+        	return false;
+    	}
+    	MenuLcdSet(lcd);
     }
-    MenuLcdSet(lcd);
 
     Log(LOG_TYPE_INFO, "CONFIGS", "Add Menu GPIOs");
 

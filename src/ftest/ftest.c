@@ -58,7 +58,7 @@ static int TestThread(void *data)
                 continue;
             }
 
-            if (!strcmp(pin->name, "none") || (pin->pin == 0)) {
+            if (!strcmp(pin->name, "none")) {
                 continue;
             }
 
@@ -100,7 +100,7 @@ static int TestThread(void *data)
                 continue;
             }
 
-            if (!strcmp(pin->name, "none") || (pin->pin == 0)) {
+            if (!strcmp(pin->name, "none")) {
                 continue;
             }
 

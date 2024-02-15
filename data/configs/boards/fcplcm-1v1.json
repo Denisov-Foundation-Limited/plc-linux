@@ -1,0 +1,23 @@
+{
+    "extenders": [
+        { "name": "gpio-rly-in", "type": "pcf8574", "bus": 1, "addr": 62, "base": 800 }
+    ],
+
+    "gpio": [
+        { "name": "cpu-status",  "pin": 14,  "type": "digital", "mode": "output", "pull": "none" },
+	{ "name": "cpu-buzzer",  "pin": 11,  "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "cpu-alarm",   "pin": 12,  "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-opto-1",  "pin": 807, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-2",  "pin": 806, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-3",  "pin": 805, "type": "digital", "mode": "input",  "pull": "none" },
+        { "name": "ext-opto-4",  "pin": 804, "type": "digital", "mode": "input",  "pull": "none" },
+	{ "name": "ext-rly10-1", "pin": 800, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-2", "pin": 801, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly10-3", "pin": 802, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-rly5-1",  "pin": 803, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "none",        "pin": 0,   "type": "digital", "mode": "output", "pull": "none" }
+    ],
+
+    "lcd": [
+    ]
+}
