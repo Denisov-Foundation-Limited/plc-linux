@@ -38,6 +38,17 @@ typedef enum {
     TANK_LEVEL_MAX
 } TankLevelType;
 
+typedef enum {
+    TANK_STATE_VALVE,
+    TANK_STATE_PUMP,
+    TANK_STATE_MAX
+} TankStateType;
+
+typedef struct  {
+    unsigned on;
+    unsigned off;
+} TankState;
+
 typedef struct {
     unsigned        percent;
     GpioPin         *gpio;
@@ -53,7 +64,17 @@ typedef struct {
     bool        status;
     bool        pump;
     bool        valve;
+    TankState   *state[TANK_STATE_MAX];
 } Tank;
+
+/**
+ * @brief Make new Tank States object
+ * 
+ * @param on 
+ * 
+ * @return TankState object
+ */
+TankState *TankStateNew(unsigned on, unsigned off);
 
 /**
  * @brief Make new Tank Level object
@@ -114,6 +135,15 @@ void TankLevelAdd(Tank *tank, TankLevel *level);
  * @param gpio GPIO object
  */
 void TankGpioSet(Tank *tank, TankGpio id, GpioPin *gpio);
+
+/**
+ * @brief Set Tank state
+ * 
+ * @param tank Tank controller
+ * @param type Type of state
+ * @param state Tank state object
+ */
+void TankStateSet(Tank *tank, TankStateType type, TankState *state);
 
 /**
  * @brief Set status for Tank

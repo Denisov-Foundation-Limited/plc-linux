@@ -81,21 +81,25 @@ static void TankLevelProcess(Tank *tank)
 
     LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" water level %u%%", tank->name,  tank->level);
 
-    if (tank->level == TANK_LEVEL_PERCENT_MIN) {
+    if (tank->level <= tank->state[TANK_STATE_PUMP]->off) {
         GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], false);
         tank->pump = false;
         PlcAlarmSet(PLC_ALARM_TANK, true);
         PlcBuzzerRun(PLC_BUZZER_TANK_EMPTY, true);
-    } else {
+    }
+
+    if (tank->level >= tank->state[TANK_STATE_PUMP]->on) {
         PlcAlarmSet(PLC_ALARM_TANK, false);
         GpioPinWrite(tank->gpio[TANK_GPIO_PUMP], true);
         tank->pump = true;
     }
 
-    if (tank->level == TANK_LEVEL_PERCENT_MAX) {
+    if (tank->level >= tank->state[TANK_STATE_VALVE]->off) {
         GpioPinWrite(tank->gpio[TANK_GPIO_VALVE], false);
         tank->valve = false;
-    } else {
+    }
+    
+    if (tank->level <= tank->state[TANK_STATE_VALVE]->on) {
         GpioPinWrite(tank->gpio[TANK_GPIO_VALVE], true);
         tank->valve = true;
     }
@@ -185,6 +189,16 @@ static int TankStatusThread(void *data)
 /*                         PUBLIC  FUNCTIONS                         */
 /*                                                                   */
 /*********************************************************************/
+
+TankState *TankStateNew(unsigned on, unsigned off)
+{
+    TankState *state = (TankState *)malloc(sizeof(TankState));
+
+    state->on = on;
+    state->off = off;
+
+    return state;
+}
 
 TankLevel *TankLevelNew(unsigned percent, GpioPin *gpio, bool notify)
 {
@@ -324,4 +338,9 @@ bool TankControllerStart()
     }
 
     return true;
+}
+
+void TankStateSet(Tank *tank, TankStateType type, TankState *state)
+{
+    tank->state[type] = state;
 }

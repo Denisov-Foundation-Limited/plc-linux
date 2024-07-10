@@ -70,6 +70,18 @@ static int WatererThread(void *data)
         for (GList *w = Watering.waterers; w != NULL; w = w->next) {
             Waterer *wtr = (Waterer *)w->data;
 
+            if (wtr->tank->level == TANK_LEVEL_PERCENT_MIN) {
+                if (wtr->valve != false) {
+                    if (!GpioPinWrite(wtr->gpio[WATERER_GPIO_VALVE], false)) {
+                        LogF(LOG_TYPE_ERROR, "WATERER", "Waterer \"%s\" failed to close valve by empty tank", wtr->name);
+                        return false;
+                    }
+                    wtr->valve = false;
+                    LogF(LOG_TYPE_INFO, "WATERER", "Waterer \"%s\" valve closed by empty tank", wtr->name);
+                }
+                continue;
+            }
+
             for (GList *t = Watering.waterers; t != NULL; t = t->next) {
                 WateringTime *tm = (WateringTime *)t->data;
 
@@ -135,7 +147,7 @@ static int ButtonsThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
-Waterer *WatererNew(const char *name)
+Waterer *WatererNew(const char *name, Tank *tank)
 {
     Waterer *wtr = (Waterer *)malloc(sizeof(Waterer));
 
@@ -143,6 +155,7 @@ Waterer *WatererNew(const char *name)
     wtr->status = false;
     wtr->times = NULL;
     wtr->valve = false;
+    wtr->tank = tank;
 
     return wtr;
 }
@@ -213,8 +226,25 @@ bool WatererStatusSet(Waterer *wtr, bool status, bool save)
     return true;
 }
 
+bool WatererStatusGet(Waterer *wtr, bool *status)
+{
+    if (wtr == NULL) {
+        return false;
+    }
+
+    mtx_lock(&Watering.sts_mtx);
+    *status = wtr->status;
+    mtx_unlock(&Watering.sts_mtx);
+
+    return true;
+}
+
 bool WatererValveSet(Waterer *wtr, bool status)
 {
+    if (wtr == NULL) {
+        return false;
+    }
+
     if (!WatererStatusSet(wtr, false, true)) {
         LogF(LOG_TYPE_ERROR, "WATERER", "Failed to disable Waterer \"%s\" status", wtr->name);
         return false;

@@ -115,7 +115,7 @@ int GpioPinReadA(const GpioPin *pin, int *value);
  * 
  * @return true/false as result of writing
  */
-void GpioPinWrite(const GpioPin *pin, bool state);
+bool GpioPinWrite(const GpioPin *pin, bool state);
 
 /**
  * @brief Writing analog value to GPIO

@@ -75,13 +75,18 @@
                 { "percent": 30,  "gpio": "none", "notify": false },
                 { "percent": 70,  "gpio": "none", "notify": false },
                 { "percent": 100, "gpio": "none", "notify": false }
-            ]
+            ],
+            "states": {
+                "valve": { "on": 70, "off": 100 },
+                "pump": { "on": 30, "off": 0 }
+            }
         }
     ],
 
     "waterer": [
         { 
             "name": "Теплица1",
+            "tank": "Подоконник",
             "gpio": {
                 "valve": "none",
                 "status": {

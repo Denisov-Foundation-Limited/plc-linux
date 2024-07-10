@@ -308,7 +308,7 @@ bool SecurityControllerStart()
     if (thrd_create(&sens_th, &SensorsThread, NULL) != thrd_success) {
         return false;
     }
-    if (thrd_detach(sens_th != thrd_success)) {
+    if (thrd_detach(sens_th) != thrd_success) {
         return false;
     }
     if (thrd_create(&keys_th, &KeysThread, NULL) != thrd_success) {

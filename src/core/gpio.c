@@ -79,7 +79,8 @@ bool GpioPinAdd(const GpioPin *pin, char *err)
     }
 
     if (pin->mode == GPIO_MODE_OUTPUT) {
-        digitalWrite(pin->pin, LOW);
+        if (!digitalWrite(pin->pin, LOW))
+            return false;
     }
 #endif
 
@@ -107,6 +108,7 @@ bool GpioPinRead(const GpioPin *pin, bool *state)
 {
     int     val;
     bool    ret;
+    int     mode;
 
     if (pin->pin == 0) {
         *state = false;
@@ -114,6 +116,15 @@ bool GpioPinRead(const GpioPin *pin, bool *state)
     }
 
 #ifdef __arm__
+    if (!pinModeRead(pin->pin, &mode))
+        return false;
+
+    if (mode != INPUT) {
+        if (!pinMode(pin->pin, INPUT)) {
+            return false;
+        }
+    }
+
     ret = digitalRead(pin->pin, &val);
 
     *state = (val == HIGH) ? true : false;
@@ -140,14 +151,27 @@ int GpioPinReadA(const GpioPin *pin, int *value)
     return true;
 }
 
-void GpioPinWrite(const GpioPin *pin, bool state)
+bool GpioPinWrite(const GpioPin *pin, bool state)
 {
+    int mode;
+
     if (pin->pin == 0) {
-        return;
+        return true;
     }
 #ifdef __arm__
-    digitalWrite(pin->pin, (state == true) ? HIGH : LOW);
+    if (!pinModeRead(pin->pin, &mode))
+        return false;
+
+    if (mode != OUTPUT) {
+        if (!pinMode(pin->pin, OUTPUT)) {
+            return false;
+        }
+    }
+    
+    if (!digitalWrite(pin->pin, (state == true) ? HIGH : LOW))
+        return false;
 #endif
+    return true;
 }
 
 void GpioPinWriteA(const GpioPin *pin, int value)

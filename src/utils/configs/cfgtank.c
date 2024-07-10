@@ -78,6 +78,23 @@ bool CfgTankLoad(json_t *data)
             TankLevelAdd(tank, level);
         }
 
+        json_t *jstates = json_object_get(ext_value, "states");
+        json_t *jvalve = json_object_get(jstates, "valve");
+        json_t *jpump = json_object_get(jstates, "pump");
+
+        TankState *valve_state = TankStateNew(
+                json_integer_value(json_object_get(jvalve, "on")),
+                json_integer_value(json_object_get(jvalve, "off"))
+            );
+
+        TankState *pump_state = TankStateNew(
+                json_integer_value(json_object_get(jpump, "on")),
+                json_integer_value(json_object_get(jpump, "off"))
+            );
+
+        TankStateSet(tank, TANK_STATE_PUMP, pump_state);
+        TankStateSet(tank, TANK_STATE_VALVE, valve_state);
+
         TankAdd(tank);
 
         LogF(LOG_TYPE_INFO, "CONFIGS", "Add Tank name: \"%s\"", tank->name);

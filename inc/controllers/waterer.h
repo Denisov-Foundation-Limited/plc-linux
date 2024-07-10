@@ -18,6 +18,7 @@
 #include <utils/utils.h>
 #include <core/gpio.h>
 #include <plc/plc.h>
+#include <controllers/tank.h>
 
 #define WATERER_DB_FILE    "watering.db"
 
@@ -36,6 +37,7 @@ typedef struct {
 
 typedef struct {
     char    name[SHORT_STR_LEN];
+    Tank    *tank;
     GpioPin *gpio[WATERER_GPIO_MAX];
     GList   *times;
     bool    status;
@@ -46,10 +48,11 @@ typedef struct {
  * @brief Make new Waterer object
  * 
  * @param name Name of waterer
+ * @param tank Water tank for monitoring level
  * 
  * @return Waterer object
  */
-Waterer *WatererNew(const char *name);
+Waterer *WatererNew(const char *name, Tank *tank);
 
 /**
  * @brief Make new Waterer object
@@ -106,9 +109,19 @@ GList **WaterersGet();
  * @param status Waterer controller status
  * @param save Save status to DB
  * 
- * @return Waterer controller
+ * @return True/False as result
  */
 bool WatererStatusSet(Waterer *wtr, bool status, bool save);
+
+/**
+ * @brief Get status from Waterer
+ * 
+ * @param tank Waterer controller
+ * @param status Waterer controller status
+ * 
+ * @return True/False as result
+ */
+bool WatererStatusGet(Waterer *wtr, bool *status);
 
 /**
  * @brief Set valve status for Waterer

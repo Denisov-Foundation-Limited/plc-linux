@@ -10,6 +10,7 @@
 
 #include <utils/log.h>
 #include <controllers/waterer.h>
+#include <controllers/tank.h>
 #include <core/gpio.h>
 #include <utils/configs/cfgwaterer.h>
 
@@ -27,7 +28,13 @@ bool CfgWatererLoad(json_t *data)
     Log(LOG_TYPE_INFO, "CONFIGS", "Add Waterer controller");
 
     json_array_foreach(json_object_get(data, "waterer"), ext_index, ext_value) {
-        Waterer *wtr = WatererNew(json_string_value(json_object_get(ext_value, "name")));
+        Tank *tank = TankGet(json_string_value(json_object_get(ext_value, "tank")));
+        if (tank == NULL) {
+            LogF(LOG_TYPE_ERROR, "CONFIGS", "Waterer tank %s not found", json_string_value(json_object_get(ext_value, "tank")));
+            return false;
+        }
+
+        Waterer *wtr = WatererNew(json_string_value(json_object_get(ext_value, "name")), tank);
 
         json_t *jgpio = json_object_get(ext_value, "gpio");
 
