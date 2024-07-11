@@ -15,9 +15,11 @@
 
 /**
  * @brief Starting Factory Test
+ * 
+ * @param input Test only inputs
  *
  * @return Result of FTtest
  */
-bool FactoryTestStart();
+bool FactoryTestStart(bool input);
 
 #endif /* __FTEST_H__ */

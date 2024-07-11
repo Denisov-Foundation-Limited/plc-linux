@@ -26,11 +26,15 @@ int main(const int argc, const char **argv)
     char    db_path[STR_LEN] = "./data/db/";
     char    cam_path[STR_LEN] = "./data/cam/";
     bool    ftest_start = false;
+    bool    ftest_input = false;
 
     if (argc > 1) {
         for (unsigned i = 1; i < argc; i++) {
             if (!strcmp(argv[i], "--ftest")) {
                 ftest_start = true;
+            } else if (!strcmp(argv[i], "--ftest-input")) {
+                ftest_start = true;
+                ftest_input = true;
             } else if (!strcmp(argv[i], "--configs")) {
                 strncpy(cfg_path, argv[i + 1], STR_LEN);
             } else if (!strcmp(argv[i], "--db")) {
@@ -70,7 +74,7 @@ int main(const int argc, const char **argv)
     Log(LOG_TYPE_INFO, "MAIN", "Configs was readed");
 
     if (ftest_start) {
-        if (!FactoryTestStart()) {
+        if (!FactoryTestStart(ftest_input)) {
             Log(LOG_TYPE_ERROR, "MAIN", "Failed to start Factory Test");
         }
         Log(LOG_TYPE_INFO, "MAIN", "Exiting!");

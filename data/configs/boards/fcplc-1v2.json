@@ -33,7 +33,7 @@
         { "name": "ext-rly10-11", "pin": 603, "type": "digital", "mode": "output", "pull": "none" },
         { "name": "ext-rly10-12", "pin": 602, "type": "digital", "mode": "output", "pull": "none" },
         { "name": "ext-buzzer",   "pin": 713, "type": "digital", "mode": "output", "pull": "none" },
-        { "name": "ext-pwr-12",   "pin": 711, "type": "digital", "mode": "output", "pull": "none" },
+        { "name": "ext-power",    "pin": 711, "type": "digital", "mode": "output", "pull": "none" },
         { "name": "ext-status",   "pin": 504, "type": "digital", "mode": "output", "pull": "none" },
         { "name": "ext-alarm",    "pin": 503, "type": "digital", "mode": "output", "pull": "none" },
         { "name": "ext-btn-down", "pin": 502, "type": "digital", "mode": "input",  "pull": "none" },

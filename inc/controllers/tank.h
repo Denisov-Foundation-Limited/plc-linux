@@ -29,6 +29,8 @@ typedef enum {
     TANK_GPIO_PUMP,
     TANK_GPIO_STATUS_LED,
     TANK_GPIO_STATUS_BUTTON,
+    TANK_GPIO_EMPTY,
+    TANK_GPIO_FULL,
     TANK_GPIO_MAX
 } TankGpio;
 

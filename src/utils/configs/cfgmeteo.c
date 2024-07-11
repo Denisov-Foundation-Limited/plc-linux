@@ -24,15 +24,45 @@ static bool CfgMeteoSensorsLoad(json_t *jmeteo)
     size_t  ext_index;
     json_t  *ext_value;
 
-    json_array_foreach(json_object_get(jmeteo, "sensors"), ext_index, ext_value) {
+    if (jmeteo == NULL) {
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Meteo not found");
+        return false;
+    }
+
+    json_t *jsensors = json_object_get(jmeteo, "sensors");
+    if (jsensors == NULL) {
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Meteo sensors not found");
+        return false;
+    }
+
+    json_array_foreach(jsensors, ext_index, ext_value) {
         MeteoSensor *sensor;
 
-        if (!strcmp(json_string_value(json_object_get(ext_value, "type")), "ds18b20")) {
+        json_t *jtype = json_object_get(ext_value, "type");
+        if (jtype == NULL) {
+            Log(LOG_TYPE_ERROR, "CONFIGS", "Meteo sensors type not found");
+            return false;
+        }
+
+        json_t *jname = json_object_get(ext_value, "name");
+        if (jname == NULL) {
+            Log(LOG_TYPE_ERROR, "CONFIGS", "Meteo sensors name not found");
+            return false;
+        }
+
+        if (!strcmp(json_string_value(jtype), "ds18b20")) {
             sensor = MeteoSensorNew(
-                json_string_value(json_object_get(ext_value, "name")),
+                json_string_value(jname),
                 METEO_SENSOR_DS18B20
             );
-            strncpy(sensor->ds18b20.id, json_string_value(json_object_get(ext_value, "id")), SHORT_STR_LEN);
+
+            json_t *jid = json_object_get(ext_value, "id");
+            if (jid == NULL) {
+                Log(LOG_TYPE_ERROR, "CONFIGS", "Meteo sensors name not found");
+                return false;
+            }
+
+            strncpy(sensor->ds18b20.id, json_string_value(jid), SHORT_STR_LEN);
         } else {
             Log(LOG_TYPE_INFO, "CONFIGS", "Invalid meteo sensor type");
             return false;
@@ -41,7 +71,7 @@ static bool CfgMeteoSensorsLoad(json_t *jmeteo)
         MeteoSensorAdd(sensor);
 
         LogF(LOG_TYPE_INFO, "CONFIGS", "Add Meteo sensor name: \"%s\" type: \"%s\"",
-            sensor->name, json_string_value(json_object_get(ext_value, "type")));
+            sensor->name, json_string_value(jtype));
     }
 
     return true;
@@ -55,8 +85,14 @@ static bool CfgMeteoSensorsLoad(json_t *jmeteo)
 
 bool CfgMeteoLoad(json_t *data)
 {
+    if (data == NULL) {
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Meteo data found");
+        return false;
+    }
+
     json_t *jmeteo = json_object_get(data, "meteo");
     if (jmeteo == NULL) {
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Meteo not found");
         return false;
     }
 

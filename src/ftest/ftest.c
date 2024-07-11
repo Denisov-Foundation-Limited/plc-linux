@@ -36,6 +36,7 @@ static int TestThread(void *data)
     bool    dev_found = false;
     GList   *devices = NULL;
     bool    state = false;
+    bool    *input = (bool *)data;
 
    LogPrint(LOG_TYPE_INFO, "FTEST", "Starting FTest");
 
@@ -96,7 +97,7 @@ static int TestThread(void *data)
         for (GList *p = *gpios; p != NULL; p = p->next) {
             GpioPin *pin = (GpioPin *)p->data;
 
-            if (pin->mode == GPIO_MODE_INPUT || pin->type == GPIO_TYPE_ANALOG) {
+            if (pin->mode == GPIO_MODE_INPUT || pin->type == GPIO_TYPE_ANALOG || input) {
                 continue;
             }
 
@@ -174,12 +175,12 @@ static int TestThread(void *data)
     return 0;
 }
 
-bool FactoryTestStart()
+bool FactoryTestStart(bool input)
 {
     thrd_t  test_th;
     int     test_res;
 
-    if (thrd_create(&test_th, &TestThread, NULL) != thrd_success) {
+    if (thrd_create(&test_th, &TestThread, &input) != thrd_success) {
         return false;
     }
     if (thrd_join(test_th, &test_res) != thrd_success) {

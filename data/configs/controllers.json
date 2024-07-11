@@ -65,6 +65,8 @@
             "gpio": {
                 "pump": "none",
                 "valve": "none",
+                "empty": "none",
+                "full": "none",
                 "status": {
                     "led": "none",
                     "button": "none"

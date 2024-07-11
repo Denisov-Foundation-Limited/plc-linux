@@ -98,10 +98,18 @@ static void TankLevelProcess(Tank *tank)
         GpioPinWrite(tank->gpio[TANK_GPIO_VALVE], false);
         tank->valve = false;
     }
-    
+
     if (tank->level <= tank->state[TANK_STATE_VALVE]->on) {
         GpioPinWrite(tank->gpio[TANK_GPIO_VALVE], true);
         tank->valve = true;
+    }
+
+    if (tank->level == TANK_LEVEL_PERCENT_MIN) {
+        GpioPinWrite(tank->gpio[TANK_GPIO_EMPTY], true);
+        GpioPinWrite(tank->gpio[TANK_GPIO_FULL], false);
+    } else {
+        GpioPinWrite(tank->gpio[TANK_GPIO_EMPTY], false);
+        GpioPinWrite(tank->gpio[TANK_GPIO_FULL], true);
     }
 
     LogF(LOG_TYPE_INFO, "TANK", "Tank \"%s\" valve %s", tank->name, (tank->valve == true) ? "openned" : "closed");

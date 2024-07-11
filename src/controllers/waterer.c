@@ -60,48 +60,65 @@ static bool StatusSave(Waterer *wtr)
     return true;
 }
 
-static int WatererThread(void *data)
+static void WatererNotify(Waterer *wtr)
+{
+    char    msg[STR_LEN];
+
+    snprintf(msg, STR_LEN, "ПОЛИВ+\"%s\":+кран+%s", wtr->name, (wtr->valve == true) ? "открыт" : "закрыт");
+
+    if (!NotifierTelegramSend(msg)) {
+        Log(LOG_TYPE_ERROR, "WATERER", "Failed to send waterer notify");
+    }
+}
+
+static void WateringTimesCheck(Waterer *wtr)
 {
     PlcTime now;
 
+    PlcTimeGet(&now);
+
+    for (GList *t = wtr->times; t != NULL; t = t->next) {
+        WateringTime *tm = (WateringTime *)t->data;
+
+        if (tm->state != wtr->valve) {
+            if (tm->time.dow == now.dow && tm->time.hour == now.hour && tm->time.min == now.min && wtr->status) {
+                GpioPinWrite(wtr->gpio[WATERER_GPIO_VALVE], tm->state);
+                wtr->valve = tm->state;
+                LogF(LOG_TYPE_INFO, "WATERER", "Waterer \"%s\" valve %s", wtr->name, (tm->state == true) ? "openned" : "closed");
+
+                if (tm->notify) {
+                    WatererNotify(wtr);
+                }
+            }
+        }
+    }
+}
+
+static bool TankLevelEmptyCheck(Waterer *wtr)
+{
+    if (wtr->tank->level == TANK_LEVEL_PERCENT_MIN) {
+        if (wtr->valve != false) {
+            if (!GpioPinWrite(wtr->gpio[WATERER_GPIO_VALVE], false)) {
+                LogF(LOG_TYPE_ERROR, "WATERER", "Waterer \"%s\" failed to close valve by empty tank", wtr->name);
+                return true;
+            }
+            wtr->valve = false;
+            LogF(LOG_TYPE_INFO, "WATERER", "Waterer \"%s\" valve closed by empty tank", wtr->name);
+        }
+        return true;
+    }
+    return false;
+}
+
+static int WatererThread(void *data)
+{
     for (;;) {
-        PlcTimeGet(&now);
 
         for (GList *w = Watering.waterers; w != NULL; w = w->next) {
             Waterer *wtr = (Waterer *)w->data;
 
-            if (wtr->tank->level == TANK_LEVEL_PERCENT_MIN) {
-                if (wtr->valve != false) {
-                    if (!GpioPinWrite(wtr->gpio[WATERER_GPIO_VALVE], false)) {
-                        LogF(LOG_TYPE_ERROR, "WATERER", "Waterer \"%s\" failed to close valve by empty tank", wtr->name);
-                        return false;
-                    }
-                    wtr->valve = false;
-                    LogF(LOG_TYPE_INFO, "WATERER", "Waterer \"%s\" valve closed by empty tank", wtr->name);
-                }
-                continue;
-            }
-
-            for (GList *t = Watering.waterers; t != NULL; t = t->next) {
-                WateringTime *tm = (WateringTime *)t->data;
-
-                if (tm->state != wtr->valve) {
-                    if (tm->time.dow == now.dow && tm->time.hour == now.hour && tm->time.min == now.min && wtr->status) {
-                        GpioPinWrite(wtr->gpio[WATERER_GPIO_VALVE], tm->state);
-                        wtr->valve = tm->state;
-                        LogF(LOG_TYPE_INFO, "WATERER", "Waterer \"%s\" valve %s", wtr->name, (tm->state == true) ? "openned" : "closed");
-
-                        if (tm->notify) {
-                            char    msg[STR_LEN];
-
-                            snprintf(msg, STR_LEN, "ПОЛИВ+\"%s\":+кран+%s", wtr->name, (wtr->valve == true) ? "открыт" : "закрыт");
-
-                            if (!NotifierTelegramSend(msg)) {
-                                Log(LOG_TYPE_ERROR, "WATERER", "Failed to send watere notify");
-                            }
-                        }
-                    }
-                }
+            if (!TankLevelEmptyCheck(wtr)) {
+                WateringTimesCheck(wtr);
             }
         }
 
@@ -250,9 +267,12 @@ bool WatererValveSet(Waterer *wtr, bool status)
         return false;
     }
 
-    GpioPinWrite(wtr->gpio[WATERER_GPIO_VALVE], status);
-    wtr->valve = status;
-    LogF(LOG_TYPE_INFO, "WATERER", "Waterer \"%s\" valve %s", wtr->name, (status == true) ? "openned" : "closed");
+    if (wtr->valve != status) {
+        GpioPinWrite(wtr->gpio[WATERER_GPIO_VALVE], status);
+        wtr->valve = status;
+        LogF(LOG_TYPE_INFO, "WATERER", "Waterer \"%s\" valve %s", wtr->name, (status == true) ? "openned" : "closed");
+        WatererNotify(wtr);
+    }
 
     return true;
 }

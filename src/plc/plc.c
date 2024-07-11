@@ -184,6 +184,15 @@ bool PlcStart()
     thrd_create(&alrm_th, &AlarmThread, NULL);
     thrd_detach(alrm_th);
 
+    Log(LOG_TYPE_INFO, "PLC", "Switch on ext power");
+
+    GpioPin *pwr_pin = GpioPinGet("ext-power");
+    if (pwr_pin != NULL) {
+        if (!GpioPinWrite(pwr_pin, true)) {
+            Log(LOG_TYPE_ERROR, "PLC", "Failed to switch on ext power");
+        }
+    }
+
     Log(LOG_TYPE_INFO, "PLC", "Loading database states");
 
     if (!DatabaseLoaderLoad()) {
