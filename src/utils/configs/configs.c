@@ -112,6 +112,7 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
     /**
      * Reading Extenders configs
      */
+
     jval = json_object_get(data, "extenders");
     if (jval == NULL) {
         json_decref(data);
@@ -122,14 +123,14 @@ static bool BoardRead(const char *path, const ConfigsFactory *factory)
     json_array_foreach(jval, index, value) {
         ExtenderType type;
 
-        jval = json_object_get(value, "type");
-        if (jval == NULL) {
+        json_t *jtype = json_object_get(value, "type");
+        if (jtype == NULL) {
             json_decref(data);
             Log(LOG_TYPE_ERROR, "CONFIGS", "Extender type not found");
             return false;
         }
 
-        const char *type_str = json_string_value(jval);
+        const char *type_str = json_string_value(jtype);
         if (!strcmp(type_str, "pcf8574")) {
             type = EXT_TYPE_PCF_8574;
         } else if (!strcmp(type_str, "mcp23017")) {

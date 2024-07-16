@@ -108,7 +108,6 @@ bool GpioPinRead(const GpioPin *pin, bool *state)
 {
     int     val;
     bool    ret;
-    int     mode;
 
     if (pin->pin == 0) {
         *state = false;
@@ -116,13 +115,8 @@ bool GpioPinRead(const GpioPin *pin, bool *state)
     }
 
 #ifdef __arm__
-    if (!pinModeRead(pin->pin, &mode))
+    if (!pinMode(pin->pin, INPUT)) {
         return false;
-
-    if (mode != INPUT) {
-        if (!pinMode(pin->pin, INPUT)) {
-            return false;
-        }
     }
 
     ret = digitalRead(pin->pin, &val);
@@ -153,19 +147,12 @@ int GpioPinReadA(const GpioPin *pin, int *value)
 
 bool GpioPinWrite(const GpioPin *pin, bool state)
 {
-    int mode;
-
     if (pin->pin == 0) {
         return true;
     }
 #ifdef __arm__
-    if (!pinModeRead(pin->pin, &mode))
+    if (!pinMode(pin->pin, OUTPUT)) {
         return false;
-
-    if (mode != OUTPUT) {
-        if (!pinMode(pin->pin, OUTPUT)) {
-            return false;
-        }
     }
     
     if (!digitalWrite(pin->pin, (state == true) ? HIGH : LOW))
