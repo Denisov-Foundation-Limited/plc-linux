@@ -98,13 +98,13 @@ void LogPathSet(const char *path)
 
 bool Log(const LogType type, const char *module, const char *msg)
 {
-    PlcTime time;
+    PlcTime     time;
     char        date_str[STR_LEN];
     GString     *text = NULL;
 
     PlcTimeGet(&time);
 
-    snprintf(date_str, STR_LEN, "%d.%d.%d.log", time.year, time.month, time.day);
+    snprintf(date_str, STR_LEN, "%d.%d.%d", time.year, time.month, time.day);
 
     text = LogMakeMsg(type, module, msg);
     printf("%s", text->str);

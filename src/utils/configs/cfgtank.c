@@ -25,7 +25,7 @@ bool CfgTankLoad(json_t *data)
     json_t  *ext_value, *value;
 
     if (data == NULL) {
-        Log(LOG_TYPE_ERROR, "CONFIGS", "Tank data not found");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Configs data not found");
         return false;
     }
 
@@ -33,8 +33,8 @@ bool CfgTankLoad(json_t *data)
 
     json_t *jtank = json_object_get(data, "tank");
     if (jtank == NULL) {
-        Log(LOG_TYPE_ERROR, "CONFIGS", "Tank not found");
-        return false;
+        Log(LOG_TYPE_WARN, "CONFIGS", "Tank data not found");
+        return true;
     }
 
     json_array_foreach(jtank, ext_index, ext_value) {

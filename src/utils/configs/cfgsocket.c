@@ -26,7 +26,7 @@ bool CfgSocketLoad(json_t *data)
     SocketGroup grp;
 
     if (data == NULL) {
-        Log(LOG_TYPE_ERROR, "CONFIGS", "Socket data not found");
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Configs data not found");
         return false;
     }
 
@@ -34,8 +34,8 @@ bool CfgSocketLoad(json_t *data)
 
     json_t *jsocket = json_object_get(data, "socket");
     if (jsocket == NULL) {
-        Log(LOG_TYPE_ERROR, "CONFIGS", "Socket not found");
-        return false;
+        Log(LOG_TYPE_WARN, "CONFIGS", "Socket data not found");
+        return true;
     }
 
     json_array_foreach(jsocket, ext_index, ext_value) {

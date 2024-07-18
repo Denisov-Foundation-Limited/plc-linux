@@ -92,8 +92,8 @@ bool CfgMeteoLoad(json_t *data)
 
     json_t *jmeteo = json_object_get(data, "meteo");
     if (jmeteo == NULL) {
-        Log(LOG_TYPE_ERROR, "CONFIGS", "Meteo not found");
-        return false;
+        Log(LOG_TYPE_WARN, "CONFIGS", "Meteo data not found");
+        return true;
     }
 
     Log(LOG_TYPE_INFO, "CONFIGS", "Add Meteo controller");

@@ -248,8 +248,8 @@ bool CfgSecurityLoad(json_t *data)
 
     json_t *jsecurity = json_object_get(data, "security");
     if (jsecurity == NULL) {
-        Log(LOG_TYPE_ERROR, "CONFIGS", "Security data not found");
-        return false;
+        Log(LOG_TYPE_WARN, "CONFIGS", "Security data not found");
+        return true;
     }
 
     if (!CfgSecuritySoundLoad(jsecurity)) {
