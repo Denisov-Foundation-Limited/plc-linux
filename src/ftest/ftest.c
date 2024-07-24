@@ -97,7 +97,7 @@ static int TestThread(void *data)
         for (GList *p = *gpios; p != NULL; p = p->next) {
             GpioPin *pin = (GpioPin *)p->data;
 
-            if (pin->mode == GPIO_MODE_INPUT || pin->type == GPIO_TYPE_ANALOG || input) {
+            if (pin->mode == GPIO_MODE_INPUT || pin->type == GPIO_TYPE_ANALOG || *input) {
                 continue;
             }
 
@@ -115,6 +115,8 @@ static int TestThread(void *data)
 
             strncpy(gpio_type, "DIGITAL", SHORT_STR_LEN);
             LogPrintF(LOG_TYPE_INFO, "FTEST", "\t\tWrite GPIO name: \"%s\"\ttype: \"%s\"\tstate \"%s\"", pin->name, gpio_type, gpio_value);
+
+            UtilsSecSleep(1);
         }
 
         /**
