@@ -36,12 +36,14 @@ static struct _Security {
     bool            alarm;
     bool            last_alarm;
     bool            sound[SECURITY_SOUND_MAX];
+    bool            enabled;
 } Security = {
     .sensors = NULL,
     .keys = NULL,
     .status = false,
     .alarm = false,
     .last_alarm = false,
+    .enabled = false
 };
 
 /*********************************************************************/
@@ -250,6 +252,16 @@ static int KeysThread(void *data)
 /*                                                                   */
 /*********************************************************************/
 
+bool SecurityEnabledGet()
+{
+    return Security.enabled;
+}
+
+void SecurityEnabledSet(bool state)
+{
+    Security.enabled = state;
+}
+
 SecuritySensor *SecuritySensorNew(const char *name, SecuritySensorType type, GpioPin *gpio, bool telegram, bool sms, bool alarm)
 {
     SecuritySensor *sensor = (SecuritySensor *)malloc(sizeof(SecuritySensor));
@@ -302,6 +314,10 @@ bool SecurityKeyCheck(const char *key)
 bool SecurityControllerStart()
 {
     thrd_t  sens_th, keys_th;
+
+    if (!SecurityEnabledGet()) {
+        return true;
+    }
 
     Log(LOG_TYPE_INFO, "SECURITY", "Starting Security controller");
 

@@ -86,6 +86,9 @@ bool RpcSecurityStatusSet(unsigned unit, bool status)
     json_error_t    error;
 
     if (unit == RPC_DEFAULT_UNIT) {
+        if (!SecurityEnabledGet()) {
+            return true;
+        }
         return SecurityStatusSet(status, true);
     }
 
@@ -127,7 +130,13 @@ bool RpcSecurityStatusGet(unsigned unit, bool *status)
     }
 
     if (unit == RPC_DEFAULT_UNIT) {
+        if (!SecurityEnabledGet()) {
+            *status = false;
+            return true;
+        }
+
         *status = SecurityStatusGet();
+
         return true;
     }
 
@@ -166,6 +175,9 @@ bool RpcSecurityAlarmSet(unsigned unit, bool alarm)
     json_error_t    error;
 
     if (unit == RPC_DEFAULT_UNIT) {
+        if (!SecurityEnabledGet()) {
+            return true;
+        }
         return SecurityAlarmSet(alarm, false);
     }
 
@@ -207,6 +219,10 @@ bool RpcSecurityAlarmGet(unsigned unit, bool *alarm)
     }
 
     if (unit == RPC_DEFAULT_UNIT) {
+        if (!SecurityEnabledGet()) {
+            *alarm = false;
+            return true;
+        }
         *alarm = SecurityAlarmGet();
         return true;
     }
@@ -252,6 +268,10 @@ bool RpcSecuritySensorsGet(unsigned unit, GList **sensors)
     }
 
     if (unit == RPC_DEFAULT_UNIT) {
+        if (!SecurityEnabledGet()) {
+            return true;
+        }
+
         for (GList *c = *SecuritySensorsGet(); c != NULL; c = c->next) {
             SecuritySensor *sensor = (SecuritySensor *)c->data;
 

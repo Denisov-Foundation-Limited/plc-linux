@@ -75,7 +75,7 @@ static bool NotifyLevelCheck(Tank *tank, unsigned num)
 
 static void TankLevelProcess(Tank *tank)
 {
-    if (!tank->status) {
+    if (!tank->status || tank->level == TANK_LEVEL_PERCENT_DEFAULT) {
         return;
     }
 

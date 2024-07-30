@@ -94,7 +94,7 @@ static void MenuDataPrint(MenuValue *value)
         if (value->tank.param == MENU_TANK_LEVEL) {
             unsigned lvl = value->tank.tank->level;
             if (lvl < 10) {
-                snprintf(val, SHORT_STR_LEN, "%s:  %u%%", value->alias, lvl);
+                snprintf(val, SHORT_STR_LEN, "%s: %u%%", value->alias, lvl);
             } else if (lvl >= 10 && lvl < 100) {
                 snprintf(val, SHORT_STR_LEN, "%s: %u%%", value->alias, lvl);
             } else {

@@ -64,6 +64,20 @@ typedef struct {
 } SecuritySensor;
 
 /**
+ * @brief Get Security controller enabled state
+ * 
+ * @return enabled state True/False
+*/
+bool SecurityEnabledGet();
+
+/**
+ * @brief Get Security controller enabled state
+ * 
+ * @param state New enabled state True/False
+*/
+void SecurityEnabledSet(bool state);
+
+/**
  * @brief Make new security sensor object
  * 
  * @param name Name of sensor

@@ -244,12 +244,22 @@ bool CfgSecurityLoad(json_t *data)
         return false;
     }
 
-    Log(LOG_TYPE_INFO, "CONFIGS", "Add Security controller");
-
     json_t *jsecurity = json_object_get(data, "security");
     if (jsecurity == NULL) {
         Log(LOG_TYPE_WARN, "CONFIGS", "Security data not found");
         return true;
+    }
+
+    json_t *jenabled = json_object_get(jsecurity, "enabled");
+    if (jenabled == NULL) {
+        Log(LOG_TYPE_ERROR, "CONFIGS", "Security enabled not found");
+        return false;
+    }
+
+    if (!json_boolean_value(jenabled)) {
+        return true;
+    } else {
+        SecurityEnabledSet(true);
     }
 
     if (!CfgSecuritySoundLoad(jsecurity)) {
@@ -271,6 +281,8 @@ bool CfgSecurityLoad(json_t *data)
         Log(LOG_TYPE_ERROR, "CONFIGS", "Failed to load security keys configs");
         return false;
     }
-    
+
+    Log(LOG_TYPE_INFO, "CONFIGS", "Added Security controller");
+
     return true;
 }
