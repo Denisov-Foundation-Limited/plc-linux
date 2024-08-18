@@ -15,6 +15,7 @@
 #include <controllers/socket.h>
 #include <controllers/tank.h>
 #include <controllers/waterer.h>
+#include <controllers/therm.h>
 
 /*********************************************************************/
 /*                                                                   */
@@ -46,6 +47,11 @@ bool ControllersStart()
 
     if (!WatererControllerStart()) {
         Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Waterer controller");
+        return false;
+    }
+
+    if (!ThermControllerStart()) {
+        Log(LOG_TYPE_ERROR, "CONTROLLERS", "Failed to start Therm controller");
         return false;
     }
 
